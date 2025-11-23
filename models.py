@@ -4,28 +4,22 @@ from sqlalchemy.orm import relationship
 
 db = SQLAlchemy()
 
-# ----------------------------------------------------
-# 1. User Modell (Kiegészítve: is_active)
-# ----------------------------------------------------
 class User(db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True) # Index a gyors kereséshez
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True) 
     password_hash = db.Column(db.String(200), nullable=False)
     
-    # Profil oszlopok a diagram alapján
     major = db.Column(db.String(100), nullable=True) 
     bio = db.Column(db.Text, nullable=True)
     avatar_url = db.Column(db.String(255), nullable=True)
 
-    # Kiegészítés: Aktivitás jelzés (pl. tiltás vagy inaktiválás esetén)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Kapcsolatok (Relationships)
     created_groups = relationship('Group', backref='creator', lazy=True, foreign_keys='Group.creator_id')
     created_events = relationship('Event', backref='creator', lazy=True, foreign_keys='Event.creator_id')
     
@@ -40,13 +34,9 @@ class User(db.Model):
         return f"<User {self.email}>"
 
 
-# ----------------------------------------------------
-# 2. GroupMembers Modell (Explicit tagsági tábla)
-# ----------------------------------------------------
 class GroupMember(db.Model):
     __tablename__ = 'group_members'
     
-    # Összetett elsődleges kulcs
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), primary_key=True, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, index=True)
     
@@ -57,20 +47,16 @@ class GroupMember(db.Model):
         return f"<GroupMember Group:{self.group_id} User:{self.user_id}>"
 
 
-# ----------------------------------------------------
-# 3. Group Modell (Kiegészítve: deleted_at)
-# ----------------------------------------------------
 class Group(db.Model):
     __tablename__ = 'groups'
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), unique=True, nullable=False)
-    subject = db.Column(db.String(100), nullable=False, index=True) # Index a gyors kereséshez
+    subject = db.Column(db.String(100), nullable=False, index=True) 
     description = db.Column(db.Text, nullable=True)
     
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
-    # Kiegészítés: Puha törlés (soft delete)
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -84,9 +70,6 @@ class Group(db.Model):
         return f"<Group {self.name}>"
 
 
-# ----------------------------------------------------
-# 4. Event Modell (Kiegészítve: deleted_at)
-# ----------------------------------------------------
 class Event(db.Model):
     __tablename__ = 'events'
     
@@ -99,7 +82,6 @@ class Event(db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=False, index=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
-    # Kiegészítés: Puha törlés (soft delete)
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -109,9 +91,6 @@ class Event(db.Model):
         return f"<Event {self.title}>"
 
 
-# ----------------------------------------------------
-# 5. Post Modell (Kiegészítve: deleted_at)
-# ----------------------------------------------------
 class Post(db.Model):
     __tablename__ = 'posts'
     
@@ -122,7 +101,6 @@ class Post(db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'), nullable=False, index=True)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
-    # Kiegészítés: Puha törlés (soft delete)
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -134,9 +112,6 @@ class Post(db.Model):
         return f"<Post {self.title[:20]}>"
 
 
-# ----------------------------------------------------
-# 6. Comment Modell (Kiegészítve: deleted_at)
-# ----------------------------------------------------
 class Comment(db.Model):
     __tablename__ = 'comments'
     
@@ -146,7 +121,6 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False, index=True)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     
-    # Kiegészítés: Puha törlés (soft delete)
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -156,9 +130,6 @@ class Comment(db.Model):
         return f"<Comment ID:{self.id}>"
 
 
-# ----------------------------------------------------
-# 7. Notification Modell (Kiegészítve: deleted_at)
-# ----------------------------------------------------
 class Notification(db.Model):
     __tablename__ = 'notifications'
     
@@ -170,7 +141,6 @@ class Notification(db.Model):
     content = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False, index=True)
     
-    # Kiegészítés: Puha törlés (soft delete)
     deleted_at = db.Column(db.DateTime, nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
