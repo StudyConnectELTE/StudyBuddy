@@ -52,6 +52,20 @@
 <h2>Profil lekérdezés</h2>
 <button onclick="profile()">Profil lekérése</button>
 
+<!-- CSOPORTKERESÉS -->
+<h2>Csoport keresés (tantárgy alapján)</h2>
+<input id="search_subject" placeholder="Tantárgy (pl. Analízis)">
+<button onclick="searchGroups()">Keresés</button>
+
+<!-- CSATLAKOZÁS -->
+<h2>Csoporthoz csatlakozás</h2>
+<input id="join_group_id" placeholder="Csoport ID">
+<button onclick="joinGroup()">Join Group</button>
+
+<!-- SAJÁT CSOPORTOK -->
+<h2>Saját csoportok</h2>
+<button onclick="myGroups()">Csoportjaim lekérése</button>
+
 <div id="output"></div>
 
 <script>
@@ -91,6 +105,46 @@ async function profile() {
     });
     document.getElementById("output").innerText = JSON.stringify(await res.json(), null, 2);
 }
+
+async function searchGroups() {
+    const subject = document.getElementById("search_subject").value;
+
+    const res = await fetch("/groups/search?q=" + encodeURIComponent(subject), {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + window.token }
+    });
+
+    const data = await res.json();
+    document.getElementById("output").innerText =
+        JSON.stringify(data, null, 2);
+}
+async function joinGroup() {
+    const res = await fetch("/groups/join", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + window.token
+        },
+        body: JSON.stringify({
+            group_id: document.getElementById("join_group_id").value
+        })
+    });
+
+    document.getElementById("output").innerText =
+        JSON.stringify(await res.json(), null, 2);
+}
+
+async function myGroups() {
+    const res = await fetch("/groups/my-groups", {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + window.token }
+    });
+
+    document.getElementById("output").innerText =
+        JSON.stringify(await res.json(), null, 2);
+}
+
+
 </script>
 
 </body>

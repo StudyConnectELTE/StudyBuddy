@@ -5,6 +5,8 @@ import bcrypt
 import jwt
 from datetime import datetime, timedelta
 from config import Config
+from models import db, User, Group, GroupMember
+
 
 # Email minta
 ELTE_EMAIL_REGEX = r"^[a-zA-Z0-9._%+-]+@(student\.elte\.hu|elte\.hu)$"
@@ -111,3 +113,240 @@ def register_routes(app):
             "avatar_url": user.avatar_url
         })
 
+    @app.route("/groups/search", methods=["GET"])
+    def search_groups():
+        # Token check
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+        user_id = decoded["user_id"]
+        user = User.query.get(user_id)
+
+        subject = request.args.get("q", "").strip()
+        if not subject:
+            return jsonify({"error": "Hiányzik a keresési kifejezés"}), 400
+
+        # 1) A tárgyhoz tartozó csoportok
+        groups = Group.query.filter(Group.subject.ilike(f"%{subject}%")).all()
+
+        user_interests = set((user.bio or "").split(","))
+
+        zero_member_group = None
+        group_list = []
+
+        best_group = None
+        best_interest_count = -1
+
+        for g in groups:
+            members = GroupMember.query.filter_by(group_id=g.id).all()
+            member_count = len(members)
+
+            same_interest_count = 0
+            for m in members:
+                u = User.query.get(m.user_id)
+                if u and u.bio:
+                    if user_interests.intersection(set(u.bio.split(","))):
+                        same_interest_count += 1
+
+            if member_count == 0 and zero_member_group is None:
+                zero_member_group = g
+
+            if same_interest_count > best_interest_count:
+                best_interest_count = same_interest_count
+                best_group = g
+
+            group_list.append({
+                "id": g.id,
+                "name": g.name,
+                "subject": g.subject,
+                "description": g.description,
+                "member_count": member_count,
+                "same_interest_members": same_interest_count
+            })
+
+        # 2) Ha nincs egyetlen csoport sem: automatikusan létrehozzuk
+        if not groups:
+            new_group = Group(
+                name=f"{subject} Study Group #1",
+                subject=subject,
+                description=f"{subject} automatikusan létrehozott tanulócsoport.",
+                creator_id=user_id
+            )
+            db.session.add(new_group)
+            db.session.commit()
+
+            return jsonify({
+                "recommended_group": {
+                    "id": new_group.id,
+                    "name": new_group.name,
+                    "subject": new_group.subject,
+                    "description": new_group.description,
+                    "member_count": 0,
+                    "same_interest_members": 0
+                },
+                "all_groups": []
+            })
+
+        # 3) Ha nincs üres csoport -> hozzunk létre egyet
+        if zero_member_group is None:
+            new_group = Group(
+                name=f"{subject} Study Group #{len(groups)+1}",
+                subject=subject,
+                description=f"{subject} új automatikusan létrehozott tanulócsoport.",
+                creator_id=user_id
+            )
+            db.session.add(new_group)
+            db.session.commit()
+
+            zero_member_group = new_group
+
+            group_list.append({
+                "id": zero_member_group.id,
+                "name": zero_member_group.name,
+                "subject": zero_member_group.subject,
+                "description": zero_member_group.description,
+                "member_count": 0,
+                "same_interest_members": 0
+            })
+
+        # 4) Ha nincs olyan csoport, amelyikben lenne közös érdeklődés -> ajánlott legyen az üres
+        if best_interest_count == 0 or best_group is None:
+            recommended_group = {
+                "id": zero_member_group.id,
+                "name": zero_member_group.name,
+                "subject": zero_member_group.subject,
+                "description": zero_member_group.description,
+                "member_count": 0,
+                "same_interest_members": 0
+            }
+        else:
+            # külön kiszámoljuk, hogy mennyi same_interest volt abban a csoportban
+            recommended_group = {
+                "id": best_group.id,
+                "name": best_group.name,
+                "subject": best_group.subject,
+                "description": best_group.description,
+                "member_count": GroupMember.query.filter_by(group_id=best_group.id).count(),
+                "same_interest_members": best_interest_count
+            }
+
+        # 5) válasz
+        return jsonify({
+            "recommended_group": recommended_group,
+            "all_groups": group_list
+        })
+
+            
+
+    @app.route("/groups/join", methods=["POST"])
+    def join_group():
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+        user_id = decoded["user_id"]
+        data = request.json
+        group_id = data.get("group_id")
+
+        if not group_id:
+            return jsonify({"error": "group_id szükséges"}), 400
+
+        group = Group.query.get(group_id)
+        if not group:
+            return jsonify({"error": "A csoport nem létezik"}), 404
+
+        subject = group.subject
+
+        # ELLENŐRIZZÜK: van-e már CSOPORTJA EHHEZ A TÁRGYHOZ
+        existing_subject_group = (
+            GroupMember.query
+            .join(Group, GroupMember.group_id == Group.id)
+            .filter(
+                GroupMember.user_id == user_id,
+                Group.subject == subject   # ugyanaz a tárgy
+            )
+            .first()
+        )
+
+        if existing_subject_group:
+            return jsonify({
+                "error": "Már van tanulócsoportod ehhez a tárgyhoz.",
+                "subject": subject
+            }), 400
+
+        # ELLENŐRIZZÜK: ebben a konkrét csoportban tag-e
+        existing_exact = GroupMember.query.filter_by(
+            user_id=user_id, group_id=group_id
+        ).first()
+
+        if existing_exact:
+            return jsonify({"message": "Már tag vagy ebben a csoportban"}), 200
+
+        # Csatlakozás
+        new_member = GroupMember(
+            user_id=user_id,
+            group_id=group_id
+        )
+        db.session.add(new_member)
+        db.session.commit()
+
+        return jsonify({"message": "Sikeresen csatlakoztál a csoporthoz!"}), 201
+
+    @app.route("/groups/my-groups", methods=["GET"])
+    def my_groups():
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Hiányzó token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            decoded = verify_jwt_token(token)
+        except:
+            return jsonify({"error": "Hibás token"}), 401
+
+        if not decoded:
+            return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
+
+        user_id = decoded["user_id"]
+
+        # A user összes csoportja
+        memberships = GroupMember.query.filter_by(user_id=user_id).all()
+
+        if not memberships:
+            return jsonify({
+                "groups": [],
+                "message": "Még nem vagy tagja egyetlen tanulócsoportnak sem."
+            }), 200
+
+        group_list = []
+        for m in memberships:
+            group = Group.query.get(m.group_id)
+            if group:
+                group_list.append({
+                    "id": group.id,
+                    "name": group.name,
+                    "subject": group.subject,
+                    "description": group.description,
+                    "joined_at": m.joined_at.strftime("%Y-%m-%d %H:%M:%S")
+                })
+
+        return jsonify({"groups": group_list}), 200
