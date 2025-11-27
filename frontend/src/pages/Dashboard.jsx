@@ -12,17 +12,45 @@ import {
   Typography,
   Box,
   Divider,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import { logout } from "../redux/slices/authSlice";
 import { authService } from "../services/api";
 import "./Dashboard.css";
 import logo from "../assets/logo_studyBuddy.png";
 
+// Tárgyak listája pelda
+const SUBJECTS = [
+  "Analízis",
+  "Lineáris algebra",
+  "Diszkrét matematika",
+  "Adatstruktúrák és algoritmusok",
+  "Programozás",
+  "Adatbázisok",
+  "Hálózatok",
+  "Operációs rendszerek",
+  "Szoftvertechnológia",
+  "Mesterséges intelligencia",
+  "Gépi tanulás",
+  "Webfejlesztés",
+  "Mobilalkalmazás fejlesztés",
+  "Számítógépes grafika",
+  "Kriptográfia",
+  "Adatbányászat",
+  "Statisztika",
+  "Valószínűségszámítás",
+];
+
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [joinGroupModalOpen, setJoinGroupModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState("");
 
   const handleLogout = () => {
     authService.logout();
@@ -31,7 +59,22 @@ const Dashboard = () => {
   };
 
   const handleAddButton = () => {
-    // TODO: Később hozzáadandó funkcionalitás
+    setJoinGroupModalOpen(true);
+  };
+
+  const handleCloseJoinGroupModal = () => {
+    setJoinGroupModalOpen(false);
+    setSelectedSubject("");
+  };
+
+  const handleJoinGroup = () => {
+    if (!selectedSubject) {
+      // TODO: Hibaüzenet megjelenítése
+      return;
+    }
+    // TODO: Csoport keresése és csatlakozás a kiválasztott tárgyhoz
+    console.log("Csatlakozás tárgyhoz:", selectedSubject);
+    handleCloseJoinGroupModal();
   };
 
   const getInitials = (name) => {
@@ -175,6 +218,50 @@ const Dashboard = () => {
         <DialogActions>
           <Button onClick={handleCloseProfileModal} variant="contained">
             Bezárás
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Csatlakozás csoporthoz Modal */}
+      <Dialog
+        open={joinGroupModalOpen}
+        onClose={handleCloseJoinGroupModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h5" component="div">
+            Csatlakozás csoporthoz
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel id="subject-select-label">Tárgy</InputLabel>
+              <Select
+                labelId="subject-select-label"
+                id="subject-select"
+                value={selectedSubject}
+                label="Tárgy"
+                onChange={(e) => setSelectedSubject(e.target.value)}
+              >
+                {SUBJECTS.map((subject) => (
+                  <MenuItem key={subject} value={subject}>
+                    {subject}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseJoinGroupModal}>Mégse</Button>
+          <Button
+            onClick={handleJoinGroup}
+            variant="contained"
+            disabled={!selectedSubject}
+          >
+            Keresés
           </Button>
         </DialogActions>
       </Dialog>
