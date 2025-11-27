@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loginStart, registerSuccess, loginFailure, clearError } from '../../redux/slices/authSlice';
 import { authService } from '../../services/api';
 import './Auth.css';
+import logo from '../../assets/logo_studyBuddy.png';
 
 const MAJORS = [
   'IK - autonómrendszer-informatikus',
@@ -171,6 +172,7 @@ export const Register = () => {
 
   return (
     <div className="auth-container">
+      <img src={logo} alt="Study Buddy" className="auth-logo" />
       <div className="auth-card">
         <h1>Regisztráció</h1>
 

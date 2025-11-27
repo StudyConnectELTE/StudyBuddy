@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loginStart, loginSuccess, loginFailure, clearError } from '../../redux/slices/authSlice';
 import { authService } from '../../services/api';
 import './Auth.css';
+import logo from '../../assets/logo_studyBuddy.png';
 
 export const Login = () => {
   const dispatch = useDispatch();
@@ -57,6 +58,7 @@ export const Login = () => {
 
   return (
     <div className="auth-container">
+      <img src={logo} alt="Study Buddy" className="auth-logo" />
       <div className="auth-card">
         <h1>Bejelentkezés</h1>
 

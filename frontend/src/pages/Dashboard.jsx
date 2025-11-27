@@ -1,9 +1,10 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { logout } from '../redux/slices/authSlice';
-import { authService } from '../services/api';
-import './Dashboard.css';
+import React from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../redux/slices/authSlice";
+import { authService } from "../services/api";
+import "./Dashboard.css";
+import logo from "../assets/logo_studyBuddy.png";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -13,13 +14,13 @@ const Dashboard = () => {
   const handleLogout = () => {
     authService.logout();
     dispatch(logout());
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     <div className="dashboard-container">
       <nav className="dashboard-nav">
-        <h1>Study Buddy</h1>
+        <img src={logo} alt="Study Buddy" className="dashboard-logo" />
         <div>
           <span>Szia, {user?.name}!</span>
           <button onClick={handleLogout} className="btn btn-logout">

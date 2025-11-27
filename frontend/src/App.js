@@ -5,16 +5,12 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './pages/Dashboard';
 import './App.css';
-import logo from './assets/logo_studyBuddy.png';
 
 function App() {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   return (
     <>
-    <div>
-      <img src={logo} alt="Logo" className="corner-logo" />
-    </div>
     <Router>
       <Routes>
         {/* Nyilvános útvonalak */}
