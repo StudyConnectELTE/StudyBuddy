@@ -1,7 +1,7 @@
 from flask import Flask
-from backend.config import Config
-from backend.models import db
-from backend.routes import register_routes
+from config import Config
+from models import db
+from routes import register_routes
 
 from flask import render_template
 

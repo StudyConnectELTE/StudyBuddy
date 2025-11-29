@@ -1,5 +1,5 @@
-from backend.app import app
-from backend.models import db
+from app import app
+from models import db
 from flask_migrate import Migrate
 from flask.cli import FlaskGroup
 

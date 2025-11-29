@@ -1,11 +1,11 @@
 from flask import request, jsonify
-from backend.models import db, User
+from models import db, User
 import re
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
-from backend.config import Config
-from backend.models import db, User, Group, GroupMember
+from config import Config
+from models import db, User, Group, GroupMember
 
 
 # Email minta
