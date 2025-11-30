@@ -293,7 +293,7 @@ const Dashboard = () => {
         )}
 
         {groups.length > 0 && (
-          <Box>
+          <Box sx={{ width: "100%" }}>
             <Typography variant="h4" sx={{ mb: 3 }}>
               Elérhető csoportok - {selectedSubject}
             </Typography>
@@ -303,6 +303,7 @@ const Dashboard = () => {
                 flexDirection: "column",
                 gap: 2,
                 pb: 4,
+                width: "100%",
               }}
             >
               {groups.map((group) => (
@@ -711,9 +712,9 @@ const Dashboard = () => {
       <footer className="dashboard-footer">
         <Box
           sx={{
-            maxWidth: "1200px",
+            maxWidth: "1400px",
             margin: "0 auto",
-            padding: "30px 20px",
+            width: "100%",
             display: "flex",
             flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
