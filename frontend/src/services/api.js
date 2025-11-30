@@ -25,7 +25,7 @@ api.interceptors.request.use(
 
 // Mock Auth Service
 const mockAuthService = {
-  register: async (email, password, name, major) => {
+  register: async (email, password, name, major, hobbies = []) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         if (
@@ -40,6 +40,7 @@ const mockAuthService = {
             name,
             email,
             major,
+            hobbies,
           };
           const response = {
             token,
@@ -93,13 +94,14 @@ const mockAuthService = {
 
 // Real Auth Service
 const realAuthService = {
-  register: async (email, password, name, major) => {
+  register: async (email, password, name, major, hobbies = []) => {
     try {
       const response = await api.post("/api/auth/register", {
         email,
         password,
         name,
         major,
+        interests: hobbies,
       });
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);
@@ -154,6 +156,7 @@ const mockGroupService = {
             description: `${subject} tanulócsoport. Csatlakozz hozzánk!`,
             member_count: 3,
             same_interest_members: 2,
+            common_hobbies: ['Programozás', 'Matematika', 'Játék'],
           },
           {
             id: 2,
@@ -162,6 +165,7 @@ const mockGroupService = {
             description: `${subject} haladó tanulócsoport.`,
             member_count: 5,
             same_interest_members: 3,
+            common_hobbies: ['Sport', 'Olvasás', 'Film'],
           },
           {
             id: 3,
@@ -170,6 +174,7 @@ const mockGroupService = {
             description: `${subject} kezdő tanulócsoport.`,
             member_count: 2,
             same_interest_members: 1,
+            common_hobbies: ['Zene', 'Fotózás'],
           },
         ];
 

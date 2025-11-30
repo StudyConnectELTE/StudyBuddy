@@ -97,12 +97,26 @@ const Dashboard = () => {
       const response = await groupService.searchGroups(selectedSubject);
       // A response tartalmazza a recommended_group és all_groups mezőket
       const allGroups = [];
-      if (response.recommended_group) {
+      const seenIds = new Set();
+
+      // Először az all_groups-ot adjuk hozzá
+      if (response.all_groups && Array.isArray(response.all_groups)) {
+        response.all_groups.forEach((group) => {
+          if (!seenIds.has(group.id)) {
+            allGroups.push(group);
+            seenIds.add(group.id);
+          }
+        });
+      }
+
+      // Ha van recommended_group és még nincs benne, akkor hozzáadjuk
+      if (
+        response.recommended_group &&
+        !seenIds.has(response.recommended_group.id)
+      ) {
         allGroups.push(response.recommended_group);
       }
-      if (response.all_groups && Array.isArray(response.all_groups)) {
-        allGroups.push(...response.all_groups);
-      }
+
       setGroups(allGroups);
       handleCloseJoinGroupModal();
     } catch (err) {
@@ -122,12 +136,26 @@ const Dashboard = () => {
       if (selectedSubject) {
         const response = await groupService.searchGroups(selectedSubject);
         const allGroups = [];
-        if (response.recommended_group) {
+        const seenIds = new Set();
+
+        // Először az all_groups-ot adjuk hozzá
+        if (response.all_groups && Array.isArray(response.all_groups)) {
+          response.all_groups.forEach((group) => {
+            if (!seenIds.has(group.id)) {
+              allGroups.push(group);
+              seenIds.add(group.id);
+            }
+          });
+        }
+
+        // Ha van recommended_group és még nincs benne, akkor hozzáadjuk
+        if (
+          response.recommended_group &&
+          !seenIds.has(response.recommended_group.id)
+        ) {
           allGroups.push(response.recommended_group);
         }
-        if (response.all_groups && Array.isArray(response.all_groups)) {
-          allGroups.push(...response.all_groups);
-        }
+
         setGroups(allGroups);
       }
     } catch (err) {
@@ -265,84 +293,164 @@ const Dashboard = () => {
         )}
 
         {groups.length > 0 && (
-          <Box>
+          <Box sx={{ width: "100%" }}>
             <Typography variant="h4" sx={{ mb: 3 }}>
               Elérhető csoportok - {selectedSubject}
             </Typography>
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                },
+                display: "flex",
+                flexDirection: "column",
                 gap: 2,
+                pb: 4,
+                width: "100%",
               }}
             >
               {groups.map((group) => (
-                <Card key={group.id} sx={{ position: "relative" }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {group.name}
-                    </Typography>
-                    {group.description && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 2 }}
-                      >
-                        {group.description}
-                      </Typography>
-                    )}
+                <Card
+                  key={group.id}
+                  sx={{
+                    position: "relative",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      boxShadow: "0 4px 20px rgba(102, 126, 234, 0.15)",
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
                     <Box
                       display="flex"
                       justifyContent="space-between"
-                      alignItems="center"
-                      gap={1}
+                      alignItems="flex-start"
+                      gap={2}
+                      flexWrap={{ xs: "wrap", sm: "nowrap" }}
                     >
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewMembers(group.id, group.name)}
+                      <Box flex={1} minWidth={0}>
+                        <Typography
+                          variant="h6"
+                          gutterBottom
                           sx={{
-                            color: "text.secondary",
+                            fontWeight: 600,
+                            color: "#333",
+                            mb: 1,
+                          }}
+                        >
+                          {group.name}
+                        </Typography>
+                        {group.description && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mb: 2 }}
+                          >
+                            {group.description}
+                          </Typography>
+                        )}
+                        {group.common_hobbies &&
+                          group.common_hobbies.length > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  display: "block",
+                                  mb: 0.75,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Közös hobbik:
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 0.75,
+                                }}
+                              >
+                                {group.common_hobbies.map((hobby) => (
+                                  <Box
+                                    key={hobby}
+                                    sx={{
+                                      px: 1.5,
+                                      py: 0.5,
+                                      borderRadius: "12px",
+                                      background:
+                                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                      color: "white",
+                                      fontSize: "12px",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {hobby}
+                                  </Box>
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              handleViewMembers(group.id, group.name)
+                            }
+                            sx={{
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: "action.hover",
+                              },
+                            }}
+                          >
+                            <PeopleIcon />
+                          </IconButton>
+                          <Typography variant="body2" color="text.secondary">
+                            {group.member_count || 0} / 6 fő
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <Button
+                          variant="contained"
+                          onClick={() => handleJoinToGroup(group.id)}
+                          disabled={
+                            (group.member_count || 0) >= 6 ||
+                            joiningGroupId === group.id
+                          }
+                          startIcon={
+                            joiningGroupId === group.id ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <AddIcon />
+                            )
+                          }
+                          sx={{
+                            bgcolor: "primary.main",
+                            color: "white",
+                            px: 3,
+                            py: 1,
+                            borderRadius: "8px",
+                            textTransform: "none",
+                            fontWeight: 600,
                             "&:hover": {
-                              bgcolor: "action.hover",
+                              bgcolor: "primary.dark",
+                            },
+                            "&.Mui-disabled": {
+                              bgcolor: "grey.300",
+                              color: "grey.500",
                             },
                           }}
                         >
-                          <PeopleIcon />
-                        </IconButton>
-                        <Typography variant="body2" color="text.secondary">
-                          {group.member_count || 0} / 6 fő
-                        </Typography>
+                          {joiningGroupId === group.id
+                            ? "Csatlakozás..."
+                            : "Csatlakozás"}
+                        </Button>
                       </Box>
-                      <IconButton
-                        color="primary"
-                        onClick={() => handleJoinToGroup(group.id)}
-                        disabled={
-                          (group.member_count || 0) >= 6 ||
-                          joiningGroupId === group.id
-                        }
-                        sx={{
-                          bgcolor: "primary.main",
-                          color: "white",
-                          "&:hover": {
-                            bgcolor: "primary.dark",
-                          },
-                          "&.Mui-disabled": {
-                            bgcolor: "grey.300",
-                            color: "grey.500",
-                          },
-                        }}
-                      >
-                        {joiningGroupId === group.id ? (
-                          <CircularProgress size={20} color="inherit" />
-                        ) : (
-                          <AddIcon />
-                        )}
-                      </IconButton>
                     </Box>
                   </CardContent>
                 </Card>
@@ -409,6 +517,77 @@ const Dashboard = () => {
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
                 {user?.major || "Nincs megadva"}
               </Typography>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Hobbik
+              </Typography>
+              {user?.hobbies && user.hobbies.length > 0 ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1,
+                    mt: 1,
+                  }}
+                >
+                  {user.hobbies.map((hobby) => (
+                    <Box
+                      key={hobby}
+                      sx={{
+                        px: 2,
+                        py: 0.75,
+                        borderRadius: "20px",
+                        background:
+                          "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        color: "white",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {hobby}
+                    </Box>
+                  ))}
+                </Box>
+              ) : user?.interests && user.interests.length > 0 ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1,
+                    mt: 1,
+                  }}
+                >
+                  {user.interests.map((hobby) => (
+                    <Box
+                      key={hobby}
+                      sx={{
+                        px: 2,
+                        py: 0.75,
+                        borderRadius: "20px",
+                        background:
+                          "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        color: "white",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {hobby}
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
+                  Nincs megadva hobbik
+                </Typography>
+              )}
             </Box>
           </Box>
         </DialogContent>
@@ -516,9 +695,7 @@ const Dashboard = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  {index < selectedGroupMembers.length - 1 && (
-                    <Divider />
-                  )}
+                  {index < selectedGroupMembers.length - 1 && <Divider />}
                 </Box>
               ))}
             </Box>
@@ -530,6 +707,60 @@ const Dashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Footer */}
+      <footer className="dashboard-footer">
+        <Box
+          sx={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            width: "100%",
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#666",
+                fontWeight: 500,
+                mb: 0.5,
+              }}
+            >
+              Study Buddy
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#999",
+              }}
+            >
+              Együtt könnyebb a tanulás!
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              flexWrap: "wrap",
+              justifyContent: { xs: "center", sm: "flex-end" },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#999",
+              }}
+            >
+              © 2025 Study Buddy. Minden jog fenntartva.
+            </Typography>
+          </Box>
+        </Box>
+      </footer>
     </div>
   );
 };

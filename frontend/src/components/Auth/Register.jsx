@@ -103,6 +103,34 @@ const MAJORS = [
   'TTK - vegyész - Szintetikus biomolekuláris és gyógyszerkémia',
 ];
 
+const HOBBIES = [
+  'Sport',
+  'Olvasás',
+  'Zene',
+  'Film',
+  'Fotózás',
+  'Főzés',
+  'Utazás',
+  'Rajzolás',
+  'Festés',
+  'Kertészkedés',
+  'Tánc',
+  'Színház',
+  'Játék',
+  'Programozás',
+  'Matematika',
+  'Tudomány',
+  'Nyelvtanulás',
+  'Jóga',
+  'Meditáció',
+  'Kézműves',
+  'Horgászat',
+  'Kerékpározás',
+  'Futás',
+  'Úszás',
+  'Társasjáték',
+];
+
 export const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -114,6 +142,7 @@ export const Register = () => {
     password: '',
     confirmPassword: '',
     major: 'Informatika',
+    hobbies: [],
   });
 
   const handleChange = (e) => {
@@ -122,6 +151,19 @@ export const Register = () => {
       ...prev,
       [name]: value,
     }));
+    if (error) dispatch(clearError());
+  };
+
+  const handleHobbyToggle = (hobby) => {
+    setFormData((prev) => {
+      const hobbies = prev.hobbies.includes(hobby)
+        ? prev.hobbies.filter((h) => h !== hobby)
+        : [...prev.hobbies, hobby];
+      return {
+        ...prev,
+        hobbies,
+      };
+    });
     if (error) dispatch(clearError());
   };
 
@@ -161,7 +203,8 @@ export const Register = () => {
         formData.email,
         formData.password,
         formData.name,
-        formData.major
+        formData.major,
+        formData.hobbies
       );
       dispatch(registerSuccess(response.user));
       navigate('/dashboard');
@@ -224,6 +267,27 @@ export const Register = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Hobbik választó */}
+          <div className="form-group">
+            <label htmlFor="hobbies">
+              Hobbik <span className="optional-label">(opcionális)</span>
+            </label>
+            <div className="hobbies-container">
+              {HOBBIES.map((hobby) => (
+                <button
+                  key={hobby}
+                  type="button"
+                  className={`hobby-chip ${formData.hobbies.includes(hobby) ? 'selected' : ''}`}
+                  onClick={() => handleHobbyToggle(hobby)}
+                  disabled={loading}
+                >
+                  {hobby}
+                </button>
+              ))}
+            </div>
+            <small>Kattints a hobbikra a kiválasztáshoz</small>
           </div>
 
           {/* Jelszó input */}

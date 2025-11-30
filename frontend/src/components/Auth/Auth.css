@@ -79,6 +79,52 @@
     color: #999;
     font-size: 12px;
   }
+
+  .optional-label {
+    color: #999;
+    font-weight: 400;
+    font-size: 0.9em;
+  }
+
+  .hobbies-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .hobby-chip {
+    padding: 8px 16px;
+    border: 2px solid #ddd;
+    border-radius: 20px;
+    background: white;
+    color: #555;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .hobby-chip:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  }
+
+  .hobby-chip.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+
+  .hobby-chip:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
   
   .error-message {
     background-color: #fee;
@@ -146,15 +192,24 @@
     .auth-card {
       padding: 30px 20px;
     }
-  
+
     .auth-card h1 {
       font-size: 20px;
     }
-  
+
     .form-group input,
     .form-group select {
       padding: 10px 12px;
       font-size: 13px;
+    }
+
+    .hobbies-container {
+      gap: 6px;
+    }
+
+    .hobby-chip {
+      padding: 6px 12px;
+      font-size: 12px;
     }
   }
   
