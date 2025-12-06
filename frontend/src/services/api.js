@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// ✅ HELYBEN DEFINIÁLT TOKEN HELPER
+//HELYBEN DEFINIÁLT TOKEN HELPER
 const getAuthToken = () => localStorage.getItem("authToken");
 
 const authService = {
@@ -104,8 +104,12 @@ const groupService = {
 
   getGroupMembers: async (groupId) => {
     const token = getAuthToken();
-    // Backend route hiányzik még: GET /groups/{id}/members
-    return [];
+    const response = await api.get(`/groups/${groupId}/members`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data.members;
   }
 };
 

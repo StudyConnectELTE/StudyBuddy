@@ -444,30 +444,39 @@ def register_routes(app):
             return jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
 
         user_id = decoded["user_id"]
+        
         memberships = GroupMember.query.filter_by(user_id=user_id).all()
 
-        if not memberships:
-            return jsonify({
-                "groups": [],
-                "message": "Még nem vagy tagja egyetlen tanulócsoportnak sem."
-            }), 200
+        #if not memberships:
+        #    return jsonify({
+        #        "groups": [],
+        #        "message": "Még nem vagy tagja egyetlen tanulócsoportnak sem."
+        #    }), 200
         
 
+        group = Group.query.get(group_id)
+        if not group:
+            return jsonify({"error": "Csoport nem található"}), 404
 
-        group_ids = [m.group_id for m in memberships]
+        #group_ids = [m.group_id for m in memberships]
 
 
-        if group_id not in group_ids:
-            return jsonify({"error": "Nincs jogosultság ehhez a csoporthoz."}), 403
+        #if group_id not in group_ids:
+        #    return jsonify({"error": "Nincs jogosultság ehhez a csoporthoz."}), 403
 
 
         group_memberships = GroupMember.query.filter_by(group_id=group_id).all()
 
         members = []
         for gm in group_memberships:
-            members.append({
-                "user_id": gm.user_id,
-            })
+            u = User.query.get(gm.user_id)
+            if u:
+                members.append({
+                    "user_id": gm.user_id,
+                    "name": u.name,
+                    "email": u.email,
+                    "major": u.major,
+                })
 
         return jsonify({
             "group_id": group_id,

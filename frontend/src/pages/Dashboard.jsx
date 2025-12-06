@@ -31,6 +31,9 @@ import { logout } from "../redux/slices/authSlice";
 import authService, { groupService } from "../services/api";
 import "./Dashboard.css";
 import logo from "../assets/logo_studyBuddy.png";
+import studySession from "../assets/study-group-session-stockcake.png";
+import image2 from "../assets/generated-image.png";
+
 
 // Tárgyak listája pelda
 const SUBJECTS = [
@@ -66,8 +69,45 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [joiningGroupId, setJoiningGroupId] = useState(null);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
-  const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState(null);
   const [selectedGroupName, setSelectedGroupName] = useState("");
+  const [myGroups, setMyGroups] = useState([]);
+  const [myGroupsLoading, setMyGroupsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("home");
+
+
+  useEffect(() => {
+    const fetchMyGroups = async () => {
+      setMyGroupsLoading(true);
+      try {
+        const response = await groupService.myGroups();
+        setMyGroups(response.groups || []);
+      } catch (err) {
+        console.error("Saját csoportok hiba:", err);
+      } finally {
+        setMyGroupsLoading(false);
+      }
+    };
+    fetchMyGroups();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "my") {
+      const fetchMyGroups = async () => {
+        setMyGroupsLoading(true);
+        try {
+          const response = await groupService.myGroups();
+          setMyGroups(response.groups || []);
+        } catch (err) {
+          console.error("Saját csoportok hiba:", err);
+        } finally {
+          setMyGroupsLoading(false);
+        }
+      };
+      fetchMyGroups();
+    }
+  }, [activeTab]); 
+
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -91,6 +131,7 @@ const Dashboard = () => {
   
 
   const handleAddButton = () => {
+    setActiveTab("search");
     setJoinGroupModalOpen(true);
   };
 
@@ -150,7 +191,7 @@ const Dashboard = () => {
     setError(null);
   
     try {
-      await groupService.joinGroup(groupId);  // 200 OK vagy 400
+      await groupService.joinGroup(groupId);
     } catch (err) {
       if (err.response?.status !== 400) {
         setError(err.response?.data?.error || "Hiba történt");
@@ -178,7 +219,7 @@ const Dashboard = () => {
           allGroups.push(response.recommended_group);
         }
   
-        setGroups(allGroups);  // ÚJ is_member: true!
+        setGroups(allGroups);
       } catch (e) {
         console.log("Frissítés hiba:", e);
       }
@@ -213,10 +254,13 @@ const Dashboard = () => {
   const handleViewMembers = async (groupId, groupName) => {
     setSelectedGroupName(groupName);
     setMembersModalOpen(true);
+    setSelectedGroupMembers([]);
+
     try {
       const members = await groupService.getGroupMembers(groupId);
-      setSelectedGroupMembers(members);
+      setSelectedGroupMembers(members || []);
     } catch (err) {
+      console.error('Tagok hiba:', err);
       setError(err.message || "Hiba történt a tagok lekérése során");
       setSelectedGroupMembers([]);
     }
@@ -233,36 +277,7 @@ const Dashboard = () => {
       <nav className="dashboard-nav">
         <img src={logo} alt="Study Buddy" className="dashboard-logo" />
         <div>
-          <Fab
-            size="medium"
-            color="primary"
-            onClick={handleAddButton}
-            sx={{
-              width: 50,
-              height: 50,
-              minWidth: 50,
-              minHeight: 50,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
-              fontSize: "32px",
-              fontWeight: 300,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
-              color: "white",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                transform: "scale(1.1) rotate(90deg)",
-                boxShadow: "0 6px 20px rgba(102, 126, 234, 0.5)",
-                background: "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)",
-              },
-            }}
-          >
-            +
-          </Fab>
-          <Avatar
+        <Avatar
             onClick={handleProfileClick}
             sx={{
               width: 50,
@@ -283,16 +298,119 @@ const Dashboard = () => {
           >
             {getInitials(user?.name)}
           </Avatar>
+          {/* HOME GOMB - Saját csoportok ELŐTT */}
+        <Button
+          onClick={() => setActiveTab("home")}
+          variant={activeTab === "home" ? "contained" : "outlined"}
+          sx={{
+            ml: 2,
+              mr: 1,
+              borderRadius: "999px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              background: activeTab === "home"
+                ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                : "transparent",
+              color: activeTab === "home" ? "#ffffff" : "rgb(0, 0, 0)",
+              borderColor: "#764ba2",
+              boxShadow: activeTab === "home"
+                ? "0 4px 15px rgb(169, 155, 230)"
+                : "none",
+              "&:hover": {
+                background: activeTab === "home"
+                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                  : "linear-gradient(135deg,rgb(190, 196, 231) 0%,rgb(209, 178, 234) 100%)",
+                boxShadow: activeTab === "home"
+                  ? "0 6px 20px rgba(102, 126, 234, 0.5)"
+                  : "none",
+              },
+          }}
+        >
+         Kezdőlap
+        </Button>
+
+        <Button
+            onClick={() => setActiveTab("my")}
+            variant={activeTab === "my" ? "contained" : "outlined"}
+            sx={{
+               ml: 1, mr: 1,
+              borderRadius: "999px",
+              px: 3.5, py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              minWidth: 120,
+             
+              background: activeTab === "my"
+                ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                : "transparent",
+              color: activeTab === "my" ? "#ffffff" : "#667eea",
+              
+              borderColor: activeTab === "my" ? "#667eea" : "#667eea",
+              boxShadow: activeTab === "my"
+                ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                : "none",
+              
+              "&:hover": {
+                background: activeTab === "search"
+                  ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
+                  : "rgba(102, 126, 234, 0.08)",
+                boxShadow: activeTab === "my"
+                  ? "0 6px 20px rgba(102, 126, 234, 0.4)"
+                  : "0 2px 8px rgba(102, 126, 234, 0.2)",
+                transform: "translateY(-1px)",
+              },
+            }}
+          >
+          Saját csoportok
+          </Button>
+          <Button
+            onClick={handleAddButton}
+            variant={activeTab === "search" ? "contained" : "outlined"}
+            sx={{
+              ml: 1, mr: 1,
+              borderRadius: "999px",  // ovális
+              px: 3.5, py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              minWidth: 120,
+              
+              // AKTÍV (kék háttér)
+              background: activeTab === "search"
+                ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                : "transparent",
+              color: activeTab === "search" ? "#ffffff" : "#667eea",
+              
+              borderColor: activeTab === "search" ? "#667eea" : "#667eea",
+              boxShadow: activeTab === "search"
+                ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                : "none",
+              
+              "&:hover": {
+                background: activeTab === "search"
+                  ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
+                  : "rgba(102, 126, 234, 0.08)",
+                boxShadow: activeTab === "search"
+                  ? "0 6px 20px rgba(102, 126, 234, 0.4)"
+                  : "0 2px 8px rgba(102, 126, 234, 0.2)",
+                transform: "translateY(-1px)",
+              },
+            }}
+            startIcon={<AddIcon sx={{ fontSize: 20 }} />}
+          >
+           Keresés
+          </Button>
           <Button
             onClick={handleLogout}
             variant="contained"
             startIcon={<LogoutIcon />}
             sx={{
+              ml: 1, mr: 1,
+              borderRadius: "999px",
               background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)",
               color: "white",
-              borderRadius: "12px",
-              px: 2.5,
-              py: 1,
+              px: 3.5, py: 1,
               fontWeight: 600,
               boxShadow: "0 4px 15px rgba(255, 107, 107, 0.3)",
               transition: "all 0.3s ease",
@@ -309,9 +427,114 @@ const Dashboard = () => {
       </nav>
 
       <main className="dashboard-content">
+        {/* KEZDŐLAP TAB */}
+        {activeTab === "home" && (
+          <Box
+            sx={{
+              maxWidth: "1100px",
+              mx: "auto",
+              mt: 4,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1.4fr 1.6fr" },
+              columnGap: 6,
+              rowGap: 6,
+              alignItems: "flex-start",
+            }}
+          >
+            {/* Bal felső: cím + bevezető szöveg */}
+            <Box>
+              <Typography
+                variant="h3"
+                sx={{
+                  mb: 3,
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Study Buddy – Kezdőlap
+              </Typography>
+
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                A Study Buddy egy tanulócsoport kereső és szervező felület, ahol
+                tárgyak szerint találhatsz vagy hozhatsz létre csoportokat.  
+                Csatlakozhatsz más hallgatókhoz, megnézheted a tagok adatait, és
+                könnyebben szervezhetitek a közös tanulást.
+              </Typography>
+            </Box>
+
+            {/* Jobb felső: “kártya” / kép helye */}
+            <Box
+              sx={{
+                borderRadius: "8px",
+                overflow: "hidden",
+                minHeight: 160,
+              }}
+            >
+              <img
+                src={studySession}
+                alt="Tanulócsoport"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            </Box>
+
+            {/* Bal alsó: nagy kép blokk */}
+        <Box
+          sx={{
+            borderRadius: "8px",
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={image2}
+            alt="Study Buddy lépések"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        </Box>
+
+
+        <Box>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ lineHeight: 1.7, mb: 1 }}
+          >
+            Használat lépésről lépésre:
+          </Typography>
+
+          <Box component="ul" sx={{ pl: 3, m: 0 }}>
+            <Box component="li" sx={{ mb: 0.5 }}>
+              Válaszd a <strong>Keresés</strong> gombot, majd add meg a tárgyat, amihez csoportot keresel.
+            </Box>
+            <Box component="li" sx={{ mb: 0.5 }}>
+              A találati listában látod a csoport nevét, leírását, létszámát és közös hobbikat.
+            </Box>
+            <Box component="li" sx={{ mb: 0.5 }}>
+              A <strong>Csatlakozás</strong> gombbal beléphetsz a csoportba, ezután a
+              <strong> Saját csoportok</strong> oldalon mindig elérhető lesz.
+            </Box>
+            <Box component="li">
+              A profilodban módosíthatod a nevedet, szakodat és a hobbijaidat, hogy jobb ajánlásokat kapj.
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+        )}
+        {/* KERESÉS TAB */}
+        {activeTab === "search" && (
+          <>
         {groups.length === 0 && !loading && (
           <>
-            <h2>Üdvözöllek a Study Buddy-ban! Változtatás, Változtatás megint</h2>
+            <h2>Üdvözöllek a Study Buddy-ban!</h2>
             <p>Szak: {user?.major}</p>
             <p>Email: {user?.email}</p>
           </>
@@ -575,6 +798,74 @@ const Dashboard = () => {
             </Box>
           </Box>
         )}
+        </>
+  )}
+
+        {/* SAJÁT CSOPORTOK TAB */}
+        {activeTab === "my" && (
+            <>
+        {myGroupsLoading ? (
+          <Box sx={{ py: 4, textAlign: "center" }}>
+            <CircularProgress size={24} />
+            <Typography sx={{ mt: 1 }}>Saját csoportok betöltése...</Typography>
+          </Box>
+        ) : myGroups.length > 0 && (
+          <Box sx={{ mb: 6 }}>
+            <Box sx={{
+              mb: 4, p: 3, borderRadius: "16px",
+              background: "linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(46, 125, 50, 0.1) 100%)",
+              border: "1px solid rgba(76, 175, 80, 0.3)",
+            }}>
+              <Typography variant="h4" sx={{
+                mb: 1,
+                background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                fontWeight: 700,
+              }}>
+                Saját Csoportjaid ({myGroups.length})
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {myGroups.map((group) => (
+                <Card key={group.id} sx={{
+                  borderRadius: "20px",
+                  border: "1px solid rgba(76, 175, 80, 0.3)",
+                  boxShadow: "0 4px 20px rgba(76, 175, 80, 0.1)",
+                  "&:hover": {
+                    boxShadow: "0 8px 32px rgba(76, 175, 80, 0.2)",
+                    transform: "translateY(-2px)",
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box flex={1}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: "#2e7d32" }}>
+                          {group.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {group.subject} • Csatlakoztál: {new Date(group.joined_at).toLocaleDateString('hu-HU')}
+                        </Typography>
+                        {group.description && (
+                          <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
+                            {group.description}
+                          </Typography>
+                        )}
+                      </Box>
+                      <IconButton onClick={() => handleViewMembers(group.id, group.name)}>
+                        <PeopleIcon />
+                      </IconButton>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </Box>
+        )}
+        </>
+  )}
       </main>
 
       {/* Profil Modal */}
@@ -841,11 +1132,16 @@ const Dashboard = () => {
           </Box>
         </DialogTitle>
         <DialogContent>
-          {selectedGroupMembers.length === 0 ? (
+          {selectedGroupMembers === null ? (
+            <Box sx={{ py: 3, textAlign: "center" }}>
+              <CircularProgress size={24} />
+              <Typography variant="body2" sx={{ mt: 1 }}>Tagok betöltése...</Typography>
+            </Box>
+          ) : selectedGroupMembers.length === 0 ? (
             <Box sx={{ py: 3, textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
                 Még nincsenek tagok ebben a csoportban.
-              </Typography>
+             </Typography>
             </Box>
           ) : (
             <Box sx={{ mt: 2 }}>
@@ -875,9 +1171,14 @@ const Dashboard = () => {
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
                         {member.name || "Névtelen felhasználó"}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {member.email || member.major || ""}
-                      </Typography>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.25 }}>
+                          {member.email || "Nincs email"}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {member.major || ""}
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
                   {index < selectedGroupMembers.length - 1 && <Divider />}
