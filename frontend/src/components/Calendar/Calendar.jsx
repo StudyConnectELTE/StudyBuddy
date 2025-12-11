@@ -339,10 +339,10 @@ const Calendar = ({ open, onClose, groupId }) => {
                         key={index}
                         onClick={() => handleDateClick(day)}
                         sx={{
-                          flex: "1 1 calc(14.285% - 0.5px)",
-                          minWidth: "calc(14.285% - 0.5px)",
-                          minHeight: "100px",
-                          p: 1,
+                          flex: "0 0 calc(14.285% - 0.5px)",
+                          maxWidth: "calc(14.285% - 0.5px)",
+                          minHeight: "60px",
+                          p: 0.5,
                           border: "1px solid rgba(102, 126, 234, 0.2)",
                           borderRadius: "8px",
                           cursor: day ? "pointer" : "default",
