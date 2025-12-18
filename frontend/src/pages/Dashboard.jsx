@@ -20,6 +20,7 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  Snackbar,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -73,6 +74,8 @@ const Dashboard = () => {
   const [myGroupsLoading, setMyGroupsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     const fetchMyGroups = async () => {
@@ -93,12 +96,54 @@ const Dashboard = () => {
     const fetchUnreadCounts = async () => {
       try {
         const counts = await groupService.getUnreadPostCounts();
-        setUnreadCounts(counts);
+
+        // Összehasonlítjuk az előző értékekkel, hogy észleljük az új posztokat
+        setUnreadCounts((prevCounts) => {
+          if (Object.keys(prevCounts).length > 0) {
+            const newPostsGroups = [];
+
+            // Végigmegyünk az összes csoporton
+            for (const groupId in counts) {
+              const currentCount = counts[groupId] || 0;
+              const previousCount = prevCounts[groupId] || 0;
+
+              // Ha nőtt az olvasatlan posztok száma
+              if (currentCount > previousCount) {
+                const group = myGroups.find((g) => g.id === parseInt(groupId));
+                if (group) {
+                  const newPostsCount = currentCount - previousCount;
+                  newPostsGroups.push({
+                    groupName: group.name,
+                    count: newPostsCount,
+                  });
+                }
+              }
+            }
+
+            // Ha van új poszt, toast üzenetet mutatunk
+            if (newPostsGroups.length > 0) {
+              const messages = newPostsGroups.map(
+                (item) =>
+                  `${item.count} új poszt a "${item.groupName}" csoportban`
+              );
+              setToastMessage(messages.join(", "));
+              setToastOpen(true);
+            }
+          }
+
+          return counts;
+        });
       } catch (err) {
         console.error("Olvasatlan posztok száma hiba:", err);
       }
     };
+
     fetchUnreadCounts();
+
+    // Polling: 30 másodpercenként ellenőrzi az új posztokat
+    const interval = setInterval(fetchUnreadCounts, 30000);
+
+    return () => clearInterval(interval);
   }, [activeTab, myGroups]);
 
   useEffect(() => {
@@ -124,7 +169,42 @@ const Dashboard = () => {
       const fetchUnreadCounts = async () => {
         try {
           const counts = await groupService.getUnreadPostCounts();
-          setUnreadCounts(counts);
+
+          // Összehasonlítjuk az előző értékekkel
+          setUnreadCounts((prevCounts) => {
+            if (Object.keys(prevCounts).length > 0) {
+              const newPostsGroups = [];
+
+              for (const groupId in counts) {
+                const currentCount = counts[groupId] || 0;
+                const previousCount = prevCounts[groupId] || 0;
+
+                if (currentCount > previousCount) {
+                  const group = myGroups.find(
+                    (g) => g.id === parseInt(groupId)
+                  );
+                  if (group) {
+                    const newPostsCount = currentCount - previousCount;
+                    newPostsGroups.push({
+                      groupName: group.name,
+                      count: newPostsCount,
+                    });
+                  }
+                }
+              }
+
+              if (newPostsGroups.length > 0) {
+                const messages = newPostsGroups.map(
+                  (item) =>
+                    `${item.count} új poszt a "${item.groupName}" csoportban`
+                );
+                setToastMessage(messages.join(", "));
+                setToastOpen(true);
+              }
+            }
+
+            return counts;
+          });
         } catch (err) {
           console.error("Olvasatlan posztok száma hiba:", err);
         }
@@ -134,7 +214,7 @@ const Dashboard = () => {
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, []);
+  }, [myGroups]);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -1403,6 +1483,37 @@ const Dashboard = () => {
           </Box>
         </Box>
       </footer>
+
+      {/* Toast üzenet új posztokhoz */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={6000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        sx={{
+          mt: 8,
+        }}
+      >
+        <Alert
+          onClose={() => setToastOpen(false)}
+          severity="info"
+          sx={{
+            width: "100%",
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white",
+            "& .MuiAlert-icon": {
+              color: "white",
+            },
+            boxShadow: "0 4px 20px rgba(102, 126, 234, 0.3)",
+            borderRadius: "12px",
+          }}
+        >
+          <Typography sx={{ fontWeight: 600, mb: 0.5 }}>
+            Új poszt érkezett!
+          </Typography>
+          <Typography variant="body2">{toastMessage}</Typography>
+        </Alert>
+      </Snackbar>
     </div>
   );
 };
