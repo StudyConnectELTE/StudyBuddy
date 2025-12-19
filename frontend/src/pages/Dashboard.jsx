@@ -21,12 +21,14 @@ import {
   Alert,
   IconButton,
   Snackbar,
+  Tooltip,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Logout as LogoutIcon,
   People as PeopleIcon,
   Settings as SettingsIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import { logout } from "../redux/slices/authSlice";
 import authService, { groupService } from "../services/api";
@@ -420,7 +422,7 @@ const Dashboard = () => {
           >
             {getInitials(user?.name)}
           </Avatar>
-          {/* HOME GOMB - Saját csoportok ELŐTT */}
+          {/* Sorrend: Kezdőlap → Saját csoportok → Keresés → Beállítások → Kijelentkezés */}
           <Button
             onClick={() => setActiveTab("home")}
             variant={activeTab === "home" ? "contained" : "outlined"}
@@ -428,8 +430,8 @@ const Dashboard = () => {
               ml: 2,
               mr: 1,
               borderRadius: "999px",
-              px: 3,
-              py: 1,
+              px: 2.5,
+              py: 0.75,
               fontWeight: 600,
               textTransform: "none",
               background:
@@ -462,27 +464,23 @@ const Dashboard = () => {
               ml: 1,
               mr: 1,
               borderRadius: "999px",
-              px: 3.5,
-              py: 1,
+              px: 2.5,
+              py: 0.75,
               fontWeight: 600,
               textTransform: "none",
-              minWidth: 120,
-
               background:
                 activeTab === "my"
                   ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                   : "transparent",
               color: activeTab === "my" ? "#ffffff" : "#667eea",
-
               borderColor: activeTab === "my" ? "#667eea" : "#667eea",
               boxShadow:
                 activeTab === "my"
                   ? "0 4px 15px rgba(102, 126, 234, 0.3)"
                   : "none",
-
               "&:hover": {
                 background:
-                  activeTab === "search"
+                  activeTab === "my"
                     ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
                     : "rgba(102, 126, 234, 0.08)",
                 boxShadow:
@@ -495,71 +493,55 @@ const Dashboard = () => {
           >
             Saját csoportok
           </Button>
-          <Button
-            onClick={() => setSettingsModalOpen(true)}
-            variant="outlined"
-            sx={{
-              ml: 1,
-              mr: 1,
-              borderRadius: "999px",
-              px: 3,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              borderColor: "#667eea",
-              color: "#667eea",
-              "&:hover": {
-                background: "rgba(102, 126, 234, 0.1)",
-                borderColor: "#667eea",
-                transform: "translateY(-1px)",
-              },
-            }}
-            startIcon={<SettingsIcon sx={{ fontSize: 20 }} />}
-          >
-            Beállítások
-          </Button>
-          <Button
-            onClick={handleAddButton}
-            variant={activeTab === "search" ? "contained" : "outlined"}
-            sx={{
-              ml: 1,
-              mr: 1,
-              borderRadius: "999px", // ovális
-              px: 3.5,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              minWidth: 120,
 
-              // AKTÍV (kék háttér)
-              background:
-                activeTab === "search"
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  : "transparent",
-              color: activeTab === "search" ? "#ffffff" : "#667eea",
-
-              borderColor: activeTab === "search" ? "#667eea" : "#667eea",
-              boxShadow:
-                activeTab === "search"
-                  ? "0 4px 15px rgba(102, 126, 234, 0.3)"
-                  : "none",
-
-              "&:hover": {
+          <Tooltip title="Csoport keresése">
+            <IconButton
+              onClick={handleAddButton}
+              sx={{
+                ml: 1,
+                mr: 1,
+                color: activeTab === "search" ? "#ffffff" : "#667eea",
                 background:
                   activeTab === "search"
-                    ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
-                    : "rgba(102, 126, 234, 0.08)",
+                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    : "transparent",
+                border: activeTab === "search" ? "none" : "1px solid #667eea",
+                borderRadius: "50%",
+                "&:hover": {
+                  background:
+                    activeTab === "search"
+                      ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
+                      : "rgba(102, 126, 234, 0.1)",
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.2s",
                 boxShadow:
                   activeTab === "search"
-                    ? "0 6px 20px rgba(102, 126, 234, 0.4)"
-                    : "0 2px 8px rgba(102, 126, 234, 0.2)",
-                transform: "translateY(-1px)",
-              },
-            }}
-            startIcon={<AddIcon sx={{ fontSize: 20 }} />}
-          >
-            Keresés
-          </Button>
+                    ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                    : "none",
+              }}
+            >
+              <SearchIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Beállítások">
+            <IconButton
+              onClick={() => setSettingsModalOpen(true)}
+              sx={{
+                ml: 1,
+                mr: 1,
+                color: "#667eea",
+                "&:hover": {
+                  background: "rgba(102, 126, 234, 0.1)",
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.2s",
+              }}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
           <Button
             onClick={handleLogout}
             variant="contained"
@@ -570,8 +552,8 @@ const Dashboard = () => {
               borderRadius: "999px",
               background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)",
               color: "white",
-              px: 3.5,
-              py: 1,
+              px: 2.5,
+              py: 0.75,
               fontWeight: 600,
               boxShadow: "0 4px 15px rgba(255, 107, 107, 0.3)",
               transition: "all 0.3s ease",
