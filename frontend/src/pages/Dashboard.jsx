@@ -427,8 +427,8 @@ const Dashboard = () => {
             onClick={() => setActiveTab("home")}
             variant={activeTab === "home" ? "contained" : "outlined"}
             sx={{
-              ml: 2,
-              mr: 1,
+              ml: 2.5,
+              mr: 0.5,
               borderRadius: "999px",
               px: 2.5,
               py: 0.75,
@@ -461,8 +461,8 @@ const Dashboard = () => {
             onClick={() => setActiveTab("my")}
             variant={activeTab === "my" ? "contained" : "outlined"}
             sx={{
-              ml: 1,
-              mr: 1,
+              ml: 0.5,
+              mr: 0.5,
               borderRadius: "999px",
               px: 2.5,
               py: 0.75,
@@ -498,8 +498,8 @@ const Dashboard = () => {
             <IconButton
               onClick={handleAddButton}
               sx={{
-                ml: 1,
-                mr: 1,
+                ml: 0.5,
+                mr: 0.5,
                 color: activeTab === "search" ? "#ffffff" : "#667eea",
                 background:
                   activeTab === "search"
@@ -529,8 +529,8 @@ const Dashboard = () => {
             <IconButton
               onClick={() => setSettingsModalOpen(true)}
               sx={{
-                ml: 1,
-                mr: 1,
+                ml: 0.5,
+                mr: 0.5,
                 color: "#667eea",
                 "&:hover": {
                   background: "rgba(102, 126, 234, 0.1)",
@@ -547,7 +547,7 @@ const Dashboard = () => {
             variant="contained"
             startIcon={<LogoutIcon />}
             sx={{
-              ml: 1,
+              ml: 0.5,
               mr: 1,
               borderRadius: "999px",
               background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)",
