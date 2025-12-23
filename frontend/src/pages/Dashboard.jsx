@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Avatar,
   Dialog,
@@ -42,6 +42,7 @@ import SubjectGroupSearch from "../components/SubjectGroupSearch.jsx";
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useSelector((state) => state.auth);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -51,7 +52,10 @@ const Dashboard = () => {
   const [selectedGroupName, setSelectedGroupName] = useState("");
   const [myGroups, setMyGroups] = useState([]);
   const [myGroupsLoading, setMyGroupsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("home");
+  
+  // URL paraméterből olvassuk a tab-ot, ha van
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "home");
   const [unreadCounts, setUnreadCounts] = useState({});
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -62,6 +66,14 @@ const Dashboard = () => {
       return saved === null ? true : saved === "true";
     }
   );
+
+  // Ha URL-ben van tab paraméter, beállítjuk
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && ["home", "my", "search"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchMyGroups = async () => {

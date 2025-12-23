@@ -562,7 +562,7 @@ const Forum = () => {
           }}
         >
           <IconButton
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/dashboard?tab=my")}
             sx={{
               background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               color: "white",
