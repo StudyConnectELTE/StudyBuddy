@@ -1365,19 +1365,18 @@ def register_routes(app):
             return jsonify({"error": "Üres fájlnév"}), 400
 
         filename = secure_filename(file.filename)
+        # Egyedi fájlnév generálása (ugyanaz mint a create_post-ban)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        unique_filename = f"{timestamp}_{filename}"
 
-        post_folder = os.path.join(
-            Config.UPLOAD_FOLDER,
-            "posts",
-            str(post_id)
-        )
-        
-        os.makedirs(post_folder, exist_ok=True)
+        # Uploads mappa létrehozása ha nem létezik
+        upload_dir = os.path.join(Config.UPLOAD_FOLDER, "posts")
+        os.makedirs(upload_dir, exist_ok=True)
 
-        file_path = os.path.join(post_folder, filename)
+        file_path = os.path.join(upload_dir, unique_filename)
         file.save(file_path)
 
-        file_url = f"/uploads/posts/{post_id}/{filename}"
+        file_url = f"/uploads/posts/{unique_filename}"
 
         attachment = PostAttachment(
             post_id=post_id,

@@ -35,6 +35,7 @@ import {
   Close as CloseIcon,
 } from "@mui/icons-material";
 import { groupService, forumService, authService } from "../services/api";
+import axios from "axios";
 import Calendar from "../components/Calendar/Calendar";
 import "./Dashboard.css";
 
@@ -67,6 +68,8 @@ const Forum = () => {
   const [postToEdit, setPostToEdit] = useState(null);
   const [editingPostTitle, setEditingPostTitle] = useState("");
   const [editingPostContent, setEditingPostContent] = useState("");
+  const [editingPostFile, setEditingPostFile] = useState(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [updatingPost, setUpdatingPost] = useState(false);
   const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
@@ -375,6 +378,48 @@ const Forum = () => {
     setPostToEdit(null);
     setEditingPostTitle("");
     setEditingPostContent("");
+    setEditingPostFile(null);
+  };
+
+  const handleAddAttachmentToPost = async () => {
+    if (!postToEdit || !editingPostFile) return;
+
+    setUploadingAttachment(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", editingPostFile);
+
+      const token = localStorage.getItem("authToken");
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/posts/${postToEdit.id}/attachments`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Frissítjük a posztot
+      await fetchPosts();
+      // Frissítjük a szerkesztendő posztot is
+      const updatedPosts = await forumService.getPosts(groupId);
+      const updatedPost = updatedPosts.find(p => p.id === postToEdit.id);
+      if (updatedPost) {
+        setPostToEdit(updatedPost);
+      }
+      setEditingPostFile(null);
+    } catch (err) {
+      console.error("Fájl hozzáadási hiba:", err);
+      setError(
+        err.response?.data?.error || "Hiba történt a fájl hozzáadása során"
+      );
+    } finally {
+      setUploadingAttachment(false);
+    }
   };
 
   const handleDeleteComment = (comment, postId) => {
@@ -1533,6 +1578,83 @@ const Forum = () => {
               ))}
             </Box>
           )}
+          
+          {/* Add New Attachment */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Új fájl hozzáadása:
+            </Typography>
+            <input
+              accept="*/*"
+              style={{ display: "none" }}
+              id="edit-post-file-upload"
+              type="file"
+              onChange={(e) => setEditingPostFile(e.target.files[0] || null)}
+            />
+            <label htmlFor="edit-post-file-upload">
+              <Button
+                component="span"
+                variant="outlined"
+                startIcon={<AttachFileIcon />}
+                disabled={uploadingAttachment}
+                sx={{
+                  mb: 1,
+                  borderColor: "#667eea",
+                  color: "#667eea",
+                  "&:hover": {
+                    borderColor: "#5568d3",
+                    backgroundColor: "rgba(102, 126, 234, 0.05)",
+                  },
+                }}
+              >
+                Fájl kiválasztása
+              </Button>
+            </label>
+            {editingPostFile && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  p: 1,
+                  mt: 1,
+                  borderRadius: "8px",
+                  backgroundColor: "rgba(102, 126, 234, 0.05)",
+                }}
+              >
+                <AttachFileIcon sx={{ color: "#667eea", fontSize: 20 }} />
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {editingPostFile.name}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={handleAddAttachmentToPost}
+                  disabled={uploadingAttachment}
+                  variant="contained"
+                  sx={{
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    textTransform: "none",
+                    minWidth: "auto",
+                    px: 2,
+                  }}
+                >
+                  {uploadingAttachment ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    "Hozzáadás"
+                  )}
+                </Button>
+                <IconButton
+                  size="small"
+                  onClick={() => setEditingPostFile(null)}
+                  disabled={uploadingAttachment}
+                  sx={{ color: "#d32f2f" }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button
