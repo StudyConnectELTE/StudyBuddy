@@ -882,9 +882,13 @@ def register_routes(app):
             content = data.get("content")
             file = None
 
-        if not content:
-            return jsonify({"error": "A comment content kötelező"}), 400
+        # Content vagy fájl kötelező
+        if not content and not (file and file.filename):
+            return jsonify({"error": "A komment tartalma vagy egy fájl megadása kötelező"}), 400
         
+        # Ha nincs content, de van fájl, üres stringet használunk
+        if not content:
+            content = ""
         
         ################################################################
 

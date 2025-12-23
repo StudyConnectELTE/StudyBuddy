@@ -189,8 +189,11 @@ const Forum = () => {
   };
 
   const handleCreateComment = async (postId) => {
-    const commentContent = newComments[postId];
-    if (!commentContent || !commentContent.trim()) {
+    const commentContent = newComments[postId] || "";
+    const file = newCommentFiles[postId] || null;
+    
+    // Legalább content vagy fájl kell legyen
+    if ((!commentContent || !commentContent.trim()) && !file) {
       return;
     }
 
@@ -198,10 +201,9 @@ const Forum = () => {
     setError(null);
 
     try {
-      const file = newCommentFiles[postId] || null;
       const newComment = await forumService.createComment(
         postId,
-        commentContent,
+        commentContent.trim() || "",
         file
       );
       // Hozzáadjuk a kommentekhez
@@ -1013,7 +1015,7 @@ const Forum = () => {
                                   fullWidth
                                   multiline
                                   rows={2}
-                                  placeholder="Írj egy kommentet..."
+                                  placeholder="Írj egy kommentet... (opcionális, ha csatolsz fájlt)"
                                   value={newComments[post.id] || ""}
                                   onChange={(e) =>
                                     setNewComments({
@@ -1031,7 +1033,11 @@ const Forum = () => {
                                 />
                                 <IconButton
                                   onClick={() => handleCreateComment(post.id)}
-                                  disabled={submittingComment[post.id]}
+                                  disabled={
+                                    submittingComment[post.id] ||
+                                    ((!newComments[post.id] || !newComments[post.id].trim()) &&
+                                      !newCommentFiles[post.id])
+                                  }
                                   sx={{
                                     background:
                                       "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
