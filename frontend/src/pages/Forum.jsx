@@ -238,6 +238,14 @@ const Forum = () => {
     });
   };
 
+  const isEdited = (createdAt, updatedAt) => {
+    if (!createdAt || !updatedAt) return false;
+    const created = new Date(createdAt);
+    const updated = new Date(updatedAt);
+    // Ha az updated_at több mint 1 másodperccel később van, akkor szerkesztve volt
+    return updated.getTime() - created.getTime() > 1000;
+  };
+
   const getInitials = (name) => {
     if (!name) return "U";
     const words = name.trim().split(" ");
@@ -768,7 +776,7 @@ const Forum = () => {
                         {post.title}
                       </Typography>
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
                       >
                         <Typography
                           variant="body2"
@@ -781,6 +789,23 @@ const Forum = () => {
                         >
                           {formatDate(post.created_at)}
                         </Typography>
+                        {isEdited(post.created_at, post.updated_at) && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "#667eea",
+                              fontStyle: "italic",
+                              fontSize: "0.75rem",
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: "8px",
+                              backgroundColor: "rgba(102, 126, 234, 0.1)",
+                              border: "1px solid rgba(102, 126, 234, 0.2)",
+                            }}
+                          >
+                            szerkesztve: {formatDate(post.updated_at)}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
                     {post.author_id === getCurrentUserId() && (
@@ -970,7 +995,7 @@ const Forum = () => {
                                               comment.author_id
                                             )}
                                           </Avatar>
-                                          <Box>
+                                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
                                             <Typography
                                               variant="caption"
                                               color="text.secondary"
@@ -981,6 +1006,23 @@ const Forum = () => {
                                             >
                                               {formatDate(comment.created_at)}
                                             </Typography>
+                                            {isEdited(comment.created_at, comment.updated_at) && (
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
+                                                  color: "#667eea",
+                                                  fontStyle: "italic",
+                                                  fontSize: "0.7rem",
+                                                  px: 0.75,
+                                                  py: 0.25,
+                                                  borderRadius: "6px",
+                                                  backgroundColor: "rgba(102, 126, 234, 0.1)",
+                                                  border: "1px solid rgba(102, 126, 234, 0.2)",
+                                                }}
+                                              >
+                                                szerkesztve: {formatDate(comment.updated_at)}
+                                              </Typography>
+                                            )}
                                           </Box>
                                         </Box>
                                         {comment.author_id ===
