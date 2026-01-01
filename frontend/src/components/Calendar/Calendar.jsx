@@ -649,6 +649,7 @@ const Calendar = ({ open, onClose, groupId }) => {
             color: "white",
             borderRadius: "24px 24px 0 0",
             fontWeight: 600,
+            pb: 2,
           }}
         >
           {editingEvent
@@ -657,84 +658,104 @@ const Calendar = ({ open, onClose, groupId }) => {
               : "Esemény megtekintése"
             : "Új esemény"}
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Esemény neve"
-            value={eventForm.title}
-            onChange={(e) =>
-              setEventForm({ ...eventForm, title: e.target.value })
-            }
-            sx={{ mb: 2 }}
-            required
-            disabled={
-              editingEvent &&
-              editingEvent.creator_id !== getCurrentUserId()
-            }
-          />
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+        <DialogContent sx={{ pt: 5, pb: 2 }}>
+          <Box sx={{ mb: 3, mt: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Esemény neve *
+            </Typography>
             <TextField
               fullWidth
-              label="Dátum"
-              type="date"
-              value={eventForm.date}
+              placeholder="Írd be az esemény nevét..."
+              value={eventForm.title}
               onChange={(e) =>
-                setEventForm({ ...eventForm, date: e.target.value })
+                setEventForm({ ...eventForm, title: e.target.value })
               }
-              InputLabelProps={{
-                shrink: true,
-              }}
               required
-              disabled={
-                editingEvent &&
-                editingEvent.creator_id !== getCurrentUserId()
-              }
-            />
-            <TextField
-              fullWidth
-              label="Idő"
-              type="time"
-              value={eventForm.time}
-              onChange={(e) =>
-                setEventForm({ ...eventForm, time: e.target.value })
-              }
-              InputLabelProps={{
-                shrink: true,
-              }}
-              required
+              variant="outlined"
               disabled={
                 editingEvent &&
                 editingEvent.creator_id !== getCurrentUserId()
               }
             />
           </Box>
-          <TextField
-            fullWidth
-            label="Helyszín (opcionális)"
-            value={eventForm.location}
-            onChange={(e) =>
-              setEventForm({ ...eventForm, location: e.target.value })
-            }
-            sx={{ mb: 2 }}
-            disabled={
-              editingEvent &&
-              editingEvent.creator_id !== getCurrentUserId()
-            }
-          />
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Leírás (opcionális)"
-            value={eventForm.description}
-            onChange={(e) =>
-              setEventForm({ ...eventForm, description: e.target.value })
-            }
-            disabled={
-              editingEvent &&
-              editingEvent.creator_id !== getCurrentUserId()
-            }
-          />
+          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+                Dátum *
+              </Typography>
+              <TextField
+                fullWidth
+                type="date"
+                value={eventForm.date}
+                onChange={(e) =>
+                  setEventForm({ ...eventForm, date: e.target.value })
+                }
+                required
+                variant="outlined"
+                disabled={
+                  editingEvent &&
+                  editingEvent.creator_id !== getCurrentUserId()
+                }
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+                Idő *
+              </Typography>
+              <TextField
+                fullWidth
+                type="time"
+                value={eventForm.time}
+                onChange={(e) =>
+                  setEventForm({ ...eventForm, time: e.target.value })
+                }
+                required
+                variant="outlined"
+                disabled={
+                  editingEvent &&
+                  editingEvent.creator_id !== getCurrentUserId()
+                }
+              />
+            </Box>
+          </Box>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Helyszín (opcionális)
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="Írd be a helyszínt..."
+              value={eventForm.location}
+              onChange={(e) =>
+                setEventForm({ ...eventForm, location: e.target.value })
+              }
+              variant="outlined"
+              disabled={
+                editingEvent &&
+                editingEvent.creator_id !== getCurrentUserId()
+              }
+            />
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Leírás (opcionális)
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="Írd be az esemény leírását..."
+              value={eventForm.description}
+              onChange={(e) =>
+                setEventForm({ ...eventForm, description: e.target.value })
+              }
+              variant="outlined"
+              disabled={
+                editingEvent &&
+                editingEvent.creator_id !== getCurrentUserId()
+              }
+            />
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           {editingEvent && editingEvent.creator_id === getCurrentUserId() && (

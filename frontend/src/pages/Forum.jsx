@@ -1288,29 +1288,40 @@ const Forum = () => {
             color: "white",
             fontWeight: 600,
             borderRadius: "24px 24px 0 0",
+            pb: 2,
           }}
         >
           Új poszt létrehozása
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Cím"
-            value={newPostTitle}
-            onChange={(e) => setNewPostTitle(e.target.value)}
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            fullWidth
-            multiline
-            rows={6}
-            label="Tartalom"
-            value={newPostContent}
-            onChange={(e) => setNewPostContent(e.target.value)}
-            sx={{ mb: 2 }}
-            required
-          />
+        <DialogContent sx={{ pt: 5, pb: 2 }}>
+          <Box sx={{ mb: 3, mt: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Cím *
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="Írd be a poszt címét..."
+              value={newPostTitle}
+              onChange={(e) => setNewPostTitle(e.target.value)}
+              required
+              variant="outlined"
+            />
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Tartalom *
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              placeholder="Írd be a poszt tartalmát..."
+              value={newPostContent}
+              onChange={(e) => setNewPostContent(e.target.value)}
+              required
+              variant="outlined"
+            />
+          </Box>
           <Box>
             <input
               accept="*/*"
@@ -1607,29 +1618,40 @@ const Forum = () => {
             color: "white",
             fontWeight: 600,
             borderRadius: "24px 24px 0 0",
+            pb: 2,
           }}
         >
           Poszt szerkesztése
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Cím"
-            value={editingPostTitle}
-            onChange={(e) => setEditingPostTitle(e.target.value)}
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            fullWidth
-            multiline
-            rows={6}
-            label="Tartalom"
-            value={editingPostContent}
-            onChange={(e) => setEditingPostContent(e.target.value)}
-            sx={{ mb: 2 }}
-            required
-          />
+        <DialogContent sx={{ pt: 5, pb: 2 }}>
+          <Box sx={{ mb: 3, mt: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Cím *
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="Írd be a poszt címét..."
+              value={editingPostTitle}
+              onChange={(e) => setEditingPostTitle(e.target.value)}
+              required
+              variant="outlined"
+            />
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Tartalom *
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              placeholder="Írd be a poszt tartalmát..."
+              value={editingPostContent}
+              onChange={(e) => setEditingPostContent(e.target.value)}
+              required
+              variant="outlined"
+            />
+          </Box>
           
           {/* Existing Attachments */}
           {postToEdit?.attachments && postToEdit.attachments.length > 0 && (
@@ -1879,26 +1901,32 @@ const Forum = () => {
             color: "white",
             fontWeight: 600,
             borderRadius: "24px 24px 0 0",
+            pb: 2,
           }}
         >
           Komment szerkesztése
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            multiline
-            rows={6}
-            label="Komment tartalma"
-            value={editingCommentContent}
-            onChange={(e) => setEditingCommentContent(e.target.value)}
-            sx={{ 
-              mb: 2,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "12px",
-              },
-            }}
-            required
-          />
+        <DialogContent sx={{ pt: 5, pb: 2 }}>
+          <Box sx={{ mb: 2, mt: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: "#666" }}>
+              Komment tartalma *
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              placeholder="Írd be a komment tartalmát..."
+              value={editingCommentContent}
+              onChange={(e) => setEditingCommentContent(e.target.value)}
+              sx={{ 
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                },
+              }}
+              required
+              variant="outlined"
+            />
+          </Box>
           
           {/* Existing Attachments */}
           {commentToEdit?.attachments && commentToEdit.attachments.length > 0 && (
