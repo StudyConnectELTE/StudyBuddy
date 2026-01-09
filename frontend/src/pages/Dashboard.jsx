@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import MenuIcon from '@mui/icons-material/Menu';
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -52,6 +53,8 @@ const Dashboard = () => {
   const [selectedGroupName, setSelectedGroupName] = useState("");
   const [myGroups, setMyGroups] = useState([]);
   const [myGroupsLoading, setMyGroupsLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
   
   // URL paraméterből olvassuk a tab-ot, ha van
   const tabFromUrl = searchParams.get("tab");
@@ -343,172 +346,333 @@ const Dashboard = () => {
     <div className="dashboard-container">
       <nav className="dashboard-nav">
         <img src={logo} alt="Study Buddy" className="dashboard-logo" />
-        <div>
-          <Avatar
-            onClick={handleProfileClick}
-            sx={{
-              width: 50,
-              height: 50,
-              bgcolor: "#000000",
-              color: "#ffffff",
-              cursor: "pointer",
-              fontSize: "18px",
-              fontWeight: 600,
-              transition: "all 0.3s ease",
-              boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
-              "&:hover": {
-                transform: "scale(1.1)",
-                boxShadow: "0 6px 20px rgba(0, 0, 0, 0.4)",
-                bgcolor: "#1a1a1a",
-              },
-            }}
-          >
-            {getInitials(user?.name)}
-          </Avatar>
-          {/* Sorrend: Kezdőlap → Saját csoportok → Keresés → Beállítások → Kijelentkezés */}
-          <Button
-            onClick={() => handleTabChange("home")}
-            variant={activeTab === "home" ? "contained" : "outlined"}
-            sx={{
-              ml: 2.5,
-              mr: 0.5,
-              borderRadius: "999px",
-              px: 2.5,
-              py: 0.75,
-              fontWeight: 600,
-              textTransform: "none",
-              background:
-                activeTab === "home"
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  : "transparent",
-              color: activeTab === "home" ? "#ffffff" : "rgb(0, 0, 0)",
-              borderColor: "#764ba2",
-              boxShadow:
-                activeTab === "home" ? "0 4px 15px rgb(169, 155, 230)" : "none",
-              "&:hover": {
-                background:
-                  activeTab === "home"
-                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                    : "linear-gradient(135deg,rgb(190, 196, 231) 0%,rgb(209, 178, 234) 100%)",
-                boxShadow:
-                  activeTab === "home"
-                    ? "0 6px 20px rgba(102, 126, 234, 0.5)"
-                    : "none",
-              },
-            }}
-          >
-            Kezdőlap
-          </Button>
+        <div className="dashboard-nav-right">
+        <IconButton 
+          className="hamburger-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMobileMenuOpen(!mobileMenuOpen);
+          }}
+          sx={{ 
+            display: { xs: 'flex', lg: 'none' },  /* ← xs-től (320px) lg-ig (1200px) VISIBLE */
+            color: '#667eea',
+            position: 'relative',
+            zIndex: 10000
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
 
-          <Button
-            onClick={() => handleTabChange("my")}
-            variant={activeTab === "my" ? "contained" : "outlined"}
-            sx={{
-              ml: 0.5,
-              mr: 0.5,
-              borderRadius: "999px",
-              px: 2.5,
-              py: 0.75,
-              fontWeight: 600,
-              textTransform: "none",
-              background:
-                activeTab === "my"
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  : "transparent",
-              color: activeTab === "my" ? "#ffffff" : "#667eea",
-              borderColor: activeTab === "my" ? "#667eea" : "#667eea",
-              boxShadow:
-                activeTab === "my"
-                  ? "0 4px 15px rgba(102, 126, 234, 0.3)"
-                  : "none",
-              "&:hover": {
-                background:
-                  activeTab === "my"
-                    ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
-                    : "rgba(102, 126, 234, 0.08)",
-                boxShadow:
-                  activeTab === "my"
-                    ? "0 6px 20px rgba(102, 126, 234, 0.4)"
-                    : "0 2px 8px rgba(102, 126, 234, 0.2)",
-                transform: "translateY(-1px)",
-              },
-            }}
-          >
-            Saját csoportok
-          </Button>
 
-          <Tooltip title="Csoport keresése">
-            <IconButton
-              onClick={handleAddButton}
+          <Box className="desktop-nav-box" sx={{ 
+            display: { xs: 'none', sm: 'none', md: 'flex' },  /* ← VÁLTOZATLAN: md felett látható */
+            alignItems: 'center', 
+            gap: 2 }}>
+            <Avatar
+              onClick={handleProfileClick}
               sx={{
-                ml: 0.5,
+                width: 50,
+                height: 50,
+                bgcolor: "#000000",
+                color: "#ffffff",
+                cursor: "pointer",
+                fontSize: "18px",
+                fontWeight: 600,
+                transition: "all 0.3s ease",
+                boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+                "&:hover": {
+                  transform: "scale(1.1)",
+                  boxShadow: "0 6px 20px rgba(0, 0, 0, 0.4)",
+                  bgcolor: "#1a1a1a",
+                },
+                display: { xs: 'none', md: 'block' },
+              }}
+            >
+            {getInitials(user?.name)}
+            </Avatar>
+            {/* Sorrend: Kezdőlap → Saját csoportok → Keresés → Beállítások → Kijelentkezés */}
+            <Button
+              onClick={() => handleTabChange("home")}
+              variant={activeTab === "home" ? "contained" : "outlined"}
+              sx={{
+                ml: 2.5,
                 mr: 0.5,
-                color: activeTab === "search" ? "#ffffff" : "#667eea",
+                borderRadius: "999px",
+                px: 2.5,
+                py: 0.75,
+                fontWeight: 600,
+                textTransform: "none",
                 background:
-                  activeTab === "search"
+                  activeTab === "home"
                     ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                     : "transparent",
-                border: activeTab === "search" ? "none" : "1px solid #667eea",
-                borderRadius: "50%",
+                color: activeTab === "home" ? "#ffffff" : "rgb(0, 0, 0)",
+                borderColor: "#764ba2",
+                boxShadow:
+                  activeTab === "home" ? "0 4px 15px rgb(169, 155, 230)" : "none",
                 "&:hover": {
                   background:
-                    activeTab === "search"
-                      ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
-                      : "rgba(102, 126, 234, 0.1)",
-                  transform: "scale(1.1)",
+                    activeTab === "home"
+                      ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                      : "linear-gradient(135deg,rgb(190, 196, 231) 0%,rgb(209, 178, 234) 100%)",
+                  boxShadow:
+                    activeTab === "home"
+                      ? "0 6px 20px rgba(102, 126, 234, 0.5)"
+                      : "none",
                 },
-                transition: "all 0.2s",
-                boxShadow:
-                  activeTab === "search"
-                    ? "0 4px 15px rgba(102, 126, 234, 0.3)"
-                    : "none",
-              }}
+             }}
             >
-              <SearchIcon />
-            </IconButton>
-          </Tooltip>
+              Kezdőlap
+            </Button>
 
-          <Tooltip title="Beállítások">
-            <IconButton
-              onClick={() => setSettingsModalOpen(true)}
+            <Button
+              onClick={() => handleTabChange("my")}
+              variant={activeTab === "my" ? "contained" : "outlined"}
               sx={{
                 ml: 0.5,
                 mr: 0.5,
-                color: "#667eea",
+                borderRadius: "999px",
+                px: 2.5,
+                py: 0.75,
+                fontWeight: 600,
+                textTransform: "none",
+                background:
+                  activeTab === "my"
+                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    : "transparent",
+                color: activeTab === "my" ? "#ffffff" : "#667eea",
+                borderColor: activeTab === "my" ? "#667eea" : "#667eea",
+                boxShadow:
+                  activeTab === "my"
+                    ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                    : "none",
                 "&:hover": {
-                  background: "rgba(102, 126, 234, 0.1)",
-                  transform: "scale(1.1)",
+                  background:
+                    activeTab === "my"
+                      ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
+                      : "rgba(102, 126, 234, 0.08)",
+                  boxShadow:
+                    activeTab === "my"
+                      ? "0 6px 20px rgba(102, 126, 234, 0.4)"
+                      : "0 2px 8px rgba(102, 126, 234, 0.2)",
+                  transform: "translateY(-1px)",
                 },
-                transition: "all 0.2s",
               }}
             >
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
-          <Button
-            onClick={handleLogout}
-            variant="contained"
-            startIcon={<LogoutIcon />}
-            sx={{
-              ml: 0.5,
-              mr: 1,
-              borderRadius: "999px",
-              background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)",
-              color: "white",
-              px: 2.5,
-              py: 0.75,
-              fontWeight: 600,
-              boxShadow: "0 4px 15px rgba(255, 107, 107, 0.3)",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                background: "linear-gradient(135deg, #ff5252 0%, #e63950 100%)",
-                boxShadow: "0 6px 20px rgba(255, 107, 107, 0.4)",
-                transform: "translateY(-2px)",
-              },
-            }}
-          >
-            Kijelentkezés
-          </Button>
+              Saját csoportok
+            </Button>
+
+            <Tooltip title="Csoport keresése">
+              <IconButton
+                onClick={handleAddButton}
+                sx={{
+                  ml: 0.5,
+                  mr: 0.5,
+                  color: activeTab === "search" ? "#ffffff" : "#667eea",
+                  background:
+                    activeTab === "search"
+                      ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                      : "transparent",
+                  border: activeTab === "search" ? "none" : "1px solid #667eea",
+                  borderRadius: "50%",
+                  "&:hover": {
+                    background:
+                      activeTab === "search"
+                        ? "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)"
+                        : "rgba(102, 126, 234, 0.1)",
+                    transform: "scale(1.1)",
+                  },
+                  transition: "all 0.2s",
+                  boxShadow:
+                    activeTab === "search"
+                      ? "0 4px 15px rgba(102, 126, 234, 0.3)"
+                      : "none",
+                }}
+              >
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Beállítások">
+              <IconButton
+                onClick={() => setSettingsModalOpen(true)}
+                sx={{
+                  ml: 0.5,
+                  mr: 0.5,
+                  color: "#667eea",
+                  "&:hover": {
+                    background: "rgba(102, 126, 234, 0.1)",
+                    transform: "scale(1.1)",
+                  },
+                  transition: "all 0.2s",
+                }}
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+            <Button
+              onClick={handleLogout}
+              variant="contained"
+              startIcon={<LogoutIcon />}
+              sx={{
+                ml: 0.5,
+                mr: 1,
+                borderRadius: "999px",
+                background: "linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)",
+                color: "white",
+                px: 2.5,
+                py: 0.75,
+                fontWeight: 600,
+                boxShadow: "0 4px 15px rgba(255, 107, 107, 0.3)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #ff5252 0%, #e63950 100%)",
+                  boxShadow: "0 6px 20px rgba(255, 107, 107, 0.4)",
+                  transform: "translateY(-2px)",
+                },
+              }}
+            >
+              Kijelentkezés
+            </Button>
+          </Box>
+          {mobileMenuOpen && (
+            <div className="mobile-menu">
+              {/* PROFIL - Avatar elsőként */}
+              <Box 
+                onClick={() => { 
+                  handleProfileClick(); 
+                  setMobileMenuOpen(false); 
+                }} 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2, 
+                  p: 2, 
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  mb: 1,
+                  '&:hover': {
+                    background: 'rgba(102, 126, 234, 0.08)'
+                  }
+                }}
+              >
+                <Avatar 
+                  sx={{ 
+                    width: 48, 
+                    height: 48, 
+                    bgcolor: '#000000', 
+                    color: '#ffffff', 
+                    fontSize: '18px', 
+                    fontWeight: 600 
+                  }}
+                >
+                  {getInitials(user?.name)}
+                </Avatar>
+                <Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    Profil
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {user?.name || 'Felhasználó'}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Divider sx={{ my: 1 }} />
+              <Button 
+                onClick={() => { 
+                  handleTabChange('home'); 
+                  setMobileMenuOpen(false); 
+                }} 
+                fullWidth 
+                variant={activeTab === 'home' ? 'contained' : 'outlined'}
+                sx={{ 
+                  justifyContent: 'flex-start',
+                  borderRadius: '12px !important',
+                  mb: 0.5,
+                  background: activeTab === 'home' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+                  color: activeTab === 'home' ? 'white' : '#667eea'
+                }}
+              >
+                Kezdőlap
+              </Button>
+              
+              <Button 
+                onClick={() => { 
+                  handleTabChange('my'); 
+                  setMobileMenuOpen(false); 
+                }} 
+                fullWidth 
+                variant={activeTab === 'my' ? 'contained' : 'outlined'}
+                sx={{ 
+                  justifyContent: 'flex-start',
+                  borderRadius: '12px !important',
+                  mb: 0.5,
+                  background: activeTab === 'my' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+                  color: activeTab === 'my' ? 'white' : '#667eea'
+                }}
+              >
+                Saját csoportok
+              </Button>
+              
+              <Button 
+                onClick={() => { 
+                  handleAddButton(); 
+                  setMobileMenuOpen(false); 
+                }} 
+                fullWidth 
+                startIcon={<SearchIcon />}
+                variant={activeTab === 'search' ? 'contained' : 'outlined'}
+                sx={{ 
+                  justifyContent: 'flex-start',
+                  borderRadius: '12px !important',
+                  mb: 0.5,
+                  background: activeTab === 'search' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+                  color: activeTab === 'search' ? 'white' : '#667eea'
+                }}
+              >
+                Csoport keresés
+              </Button>
+              
+              <Button 
+                onClick={() => { 
+                  setSettingsModalOpen(true); 
+                  setMobileMenuOpen(false); 
+                }} 
+                fullWidth 
+                startIcon={<SettingsIcon />}
+                sx={{ 
+                  justifyContent: 'flex-start',
+                  borderRadius: '12px !important',
+                  mb: 0.5,
+                  color: '#667eea'
+                }}
+              >
+                Beállítások
+              </Button>
+              
+              <Divider sx={{ my: 1 }} />
+              
+              <Button 
+                onClick={() => { 
+                  handleLogout(); 
+                }} 
+                fullWidth 
+                variant="contained" 
+                startIcon={<LogoutIcon />}
+                sx={{ 
+                  borderRadius: '12px !important',
+                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                  color: 'white',
+                  fontWeight: 600,
+                  mt: 1
+                }}
+              >
+                Kijelentkezés
+              </Button>
+            </div>
+          )}
+
         </div>
       </nav>
 

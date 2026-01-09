@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
+import MenuIcon from '@mui/icons-material/Menu';
+import { Grid } from '@mui/material';
 import {
   Box,
   Typography,
@@ -82,6 +84,7 @@ const Forum = () => {
     useState(false);
   const [updatingComment, setUpdatingComment] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     if (!groupId) return;
@@ -625,62 +628,69 @@ const Forum = () => {
 
   return (
     <div
-      className="dashboard-container"
-      style={{
-        minHeight: "100vh",
-        padding: "20px",
-        backgroundColor: "#f5f7fa",
-      }}
-    >
+      className="dashboard-container">
       <Box sx={{ maxWidth: "1200px", mx: "auto", p: 4 }}>
         {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            mb: 4,
-            p: 3,
-            borderRadius: "20px",
-            background:
-              "linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)",
-            border: "1px solid rgba(102, 126, 234, 0.1)",
-            boxShadow: "0 4px 20px rgba(102, 126, 234, 0.1)",
-          }}
-        >
-          <IconButton
-            onClick={() => navigate("/dashboard?tab=my")}
-            sx={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              color: "white",
-              "&:hover": {
-                background: "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)",
-                transform: "scale(1.05)",
-              },
-              transition: "transform 0.2s",
-            }}
-          >
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: { xs: 'space-between', sm: 'flex-start' },  // space-between telefonon
+          gap: { xs: 1, sm: 2 }, 
+          mb: 4, 
+          p: { xs: 2, sm: 3 }, 
+          borderRadius: '20px',
+          background: `linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)`,
+          border: '1px solid rgba(102, 126, 234, 0.1)',
+          boxShadow: `0 4px 20px rgba(102, 126, 234, 0.1)`
+        }}>
+          <IconButton onClick={() => navigate(`/dashboard?tab=my`)} sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', '&:hover': { background: 'linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)', transform: 'scale(1.05)' }, transition: 'transform 0.2s' }}>
             <ArrowBackIcon />
           </IconButton>
-          <Box flex={1}>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+          
+          {/* CSOPORTNÉV */}
+          <Box sx={{ flex: 1, textAlign: { xs: 'center', sm: 'left' } }}>
+            <Typography 
+              variant={{ xs: 'h6', sm: 'h4' }} 
+              sx={{ 
+                fontWeight: 700, 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
                 mb: 0.5,
+                fontSize: { xs: '1.2rem', sm: '2rem' },  // Kisebb telefonon, 1-2 sor
+                lineHeight: { xs: 1.2, sm: 1.3 },
+                wordBreak: 'break-word'
               }}
             >
-              {group?.name || "Forum"}
+              {group?.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {group?.subject || "Csoport forum"}
+              {group?.subject} Csoport fórum
             </Typography>
           </Box>
-          <IconButton
+
+          {/* Hamburger - mindig jobbra */}
+          <IconButton 
+            onClick={e => { e.stopPropagation(); setMobileMenuOpen(!mobileMenuOpen); }}
+            sx={{ 
+              display: { xs: 'flex', md: 'none' },  // Csak telefonon
+              color: '#667eea', 
+              zIndex: 10000, 
+              '&:hover': { backgroundColor: 'rgba(102,126,234,0.1)', transform: 'scale(1.1)' }
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+          
+          {/* DESKTOP ICONOK */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+            <IconButton onClick={() => setCalendarModalOpen(true)} sx={{ /* meglévő CalendarIcon sx */ }} />
+            <IconButton onClick={handleViewMembers} sx={{ /* meglévő PeopleIcon sx */ }} />
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenPostDialog(true)} sx={{ /* meglévő Új poszt sx */ }} >
+              Új poszt
+            </Button>
+            <IconButton
             onClick={() => setCalendarModalOpen(true)}
             sx={{
               background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -693,9 +703,10 @@ const Forum = () => {
               mr: 1,
             }}
             title="Naptár megtekintése"
-          >
+            >
             <CalendarIcon />
-          </IconButton>
+            </IconButton>
+
           <IconButton
             onClick={handleViewMembers}
             sx={{
@@ -712,28 +723,39 @@ const Forum = () => {
           >
             <PeopleIcon />
           </IconButton>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setOpenPostDialog(true)}
-            sx={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              borderRadius: "12px",
-              px: 3,
-              py: 1.5,
-              fontWeight: 600,
-              boxShadow: "0 4px 15px rgba(102, 126, 234, 0.3)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%)",
-                boxShadow: "0 6px 20px rgba(102, 126, 234, 0.4)",
-                transform: "translateY(-2px)",
-              },
-              transition: "all 0.2s",
-            }}
-          >
-            Új poszt
-          </Button>
+          </Box>
         </Box>
+
+
+
+        {/* MOBILE MENÜ - Header után, Posts előtt */}
+        {mobileMenuOpen && (
+          <Box sx={{ 
+            position: 'fixed', 
+            top: 120, right: 20, 
+            background: 'rgba(255,255,255,0.98)', 
+            backdropFilter: 'blur(20px)', 
+            borderRadius: 5, 
+            boxShadow: '0 12px 48px rgba(102,126,234,0.3)', 
+            p: 2, 
+            minWidth: 220, 
+            zIndex: 10001,
+            display: 'block', flexDirection: 'column', gap: 1,
+            border: '1px solid rgba(102,126,234,0.2)'
+          }}>
+            <Box onClick={() => { setCalendarModalOpen(true); setMobileMenuOpen(false); }} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 12, cursor: 'pointer', '&:hover': { background: 'rgba(102,126,234,0.08)' } }}>
+              <CalendarIcon sx={{ color: '#667eea' }} />
+              <Typography variant="body2" fontWeight={600}>Naptár</Typography>
+            </Box>
+            <Box onClick={() => { handleViewMembers(); setMobileMenuOpen(false); }} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 12, cursor: 'pointer', '&:hover': { background: 'rgba(102,126,234,0.08)' } }}>
+              <PeopleIcon sx={{ color: '#667eea' }} />
+              <Typography variant="body2" fontWeight={600}>Tagok</Typography>
+            </Box>
+            <Button onClick={() => { setOpenPostDialog(true); setMobileMenuOpen(false); }} fullWidth variant="contained" startIcon={<AddIcon sx={{ fontSize: 20 }} />} sx={{ justifyContent: 'flex-start', borderRadius: 12 }}>
+              Új poszt
+            </Button>
+          </Box>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -745,50 +767,106 @@ const Forum = () => {
         {/* Posts List */}
         {posts.length === 0 ? (
           <Card
-            sx={{
-              borderRadius: "20px",
-              border: "1px solid rgba(102, 126, 234, 0.2)",
-              boxShadow: "0 4px 20px rgba(102, 126, 234, 0.1)",
-              backgroundColor: "white",
-            }}
+          sx={{
+            borderRadius: { xs: 8, md: 12 },  // Kevésbé lekerekített
+            border: "1px solid rgba(102, 126, 234, 0.2)",
+            boxShadow: { 
+              xs: '0 1px 4px rgba(102,126,234,0.08)', 
+              md: '0 2px 8px rgba(102,126,234,0.1)', 
+              lg: '0 4px 16px rgba(102,126,234,0.12)' 
+            },
+            backgroundColor: "white",
+            transition: "all 0.2s",
+            width: '100%',
+            height: 'auto',  // Automatikus magasság a tartalomhoz
+            "&:hover": {
+              transform: 'translateY(-1px)',
+              boxShadow: { xs: '0 2px 8px rgba(102,126,234,0.12)', md: '0 4px 16px rgba(102,126,234,0.15)' }
+            },
+          }}
+          
           >
-            <CardContent sx={{ p: 4, textAlign: "center" }}>
+            <CardContent sx={{ 
+                  p: { xs: 1.5, sm: 2, md: 3, lg: 4 },  // Növekszik
+                  height: '100%',
+                  display: 'block',
+                  flexDirection: 'column'
+                }}
+                >
               <ForumIcon
                 sx={{
-                  fontSize: 80,
+                  fontSize: { xs: 48, sm: 64, md: 80 },
                   color: "#667eea",
-                  mb: 2,
+                  mb: { xs: 1, md: 2 }
                 }}
               />
               <Typography
                 variant="h5"
-                sx={{ mb: 2, fontWeight: 600, color: "#333" }}
+                        sx={{
+                          fontWeight: 700,
+                          color: "#333",
+                          mb: { xs: 1, sm: 1.5 },
+                          lineHeight: 1.3,
+                          fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem', lg: '1.6rem' }  // Növekszik
+                        }} 
               >
                 Még nincsenek posztok
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography  
+              variant={{ xs: 'body2', md: 'body1' }}
+              color="text.secondary"
+              sx={{
+                color: "#555",
+                mb: { xs: 1.5, md: 2 },
+                whiteSpace: "pre-wrap",
+                lineHeight: { xs: 1.5, sm: 1.6, md: 1.8 },
+                fontSize: { xs: '0.9rem', sm: '0.95rem', md: '1rem', lg: '1.05rem' },
+                flexGrow: 1  // Kitölti a helyet
+              }}>
                 Legyél te az első, aki posztot ír!
               </Typography>
             </CardContent>
           </Card>
         ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ width: '100%' }}>
             {posts.map((post) => (
+              <Grid 
+              item 
+              xs={12} 
+              sm={12} 
+              md={12} 
+              lg={6}  // Nagy képernyőn 2 oszlop
+              key={post.id}
+              sx={{ width: '100%' }}
+            >
               <Card
                 key={post.id}
                 sx={{
-                  borderRadius: "20px",
+                  borderRadius: { xs: 8, md: 12 },  // Kevésbé lekerekített
                   border: "1px solid rgba(102, 126, 234, 0.2)",
-                  boxShadow: "0 4px 20px rgba(102, 126, 234, 0.1)",
+                  boxShadow: { 
+                    xs: '0 1px 4px rgba(102,126,234,0.08)', 
+                    md: '0 2px 8px rgba(102,126,234,0.1)', 
+                    lg: '0 4px 16px rgba(102,126,234,0.12)' 
+                  },
                   backgroundColor: "white",
-                  transition: "transform 0.2s, box-shadow 0.2s",
+                  transition: "all 0.2s",
+                  width: '100%',
+                  height: 'auto',  // Automatikus magasság a tartalomhoz
                   "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 6px 25px rgba(102, 126, 234, 0.15)",
+                    transform: 'translateY(-1px)',
+                    boxShadow: { xs: '0 2px 8px rgba(102,126,234,0.12)', md: '0 4px 16px rgba(102,126,234,0.15)' }
                   },
                 }}
+                
               >
-                <CardContent sx={{ p: 4 }}>
+                <CardContent sx={{ 
+                  p: { xs: 1.5, sm: 2, md: 3, lg: 4 },  // Növekszik
+                  height: '100%',
+                  display: 'block',
+                  flexDirection: 'column'
+                }}
+                >
                   <Box
                     sx={{
                       display: "flex",
@@ -803,9 +881,10 @@ const Forum = () => {
                         sx={{
                           fontWeight: 700,
                           color: "#333",
-                          mb: 1.5,
+                          mb: { xs: 1, sm: 1.5 },
                           lineHeight: 1.3,
-                        }}
+                          fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem', lg: '1.6rem' }  // Növekszik
+                        }}                        
                       >
                         {post.title}
                       </Typography>
@@ -882,15 +961,16 @@ const Forum = () => {
                   </Box>
 
                   <Typography
-                    variant="body1"
+                    variant={{ xs: 'body2', md: 'body1' }}
                     sx={{
                       color: "#555",
-                      mb:
-                        post.attachments && post.attachments.length > 0 ? 2 : 3,
+                      mb: post.attachments?.length ? { xs: 1.5, md: 2 } : { xs: 2, md: 3 },
                       whiteSpace: "pre-wrap",
-                      lineHeight: 1.8,
-                      fontSize: "1rem",
+                      lineHeight: { xs: 1.5, sm: 1.6, md: 1.8 },
+                      fontSize: { xs: '0.9rem', sm: '0.95rem', md: '1rem', lg: '1.05rem' },
+                      flexGrow: 1  // Kitölti a helyet
                     }}
+
                   >
                     {post.content}
                   </Typography>
@@ -1361,8 +1441,9 @@ const Forum = () => {
                   </Box>
                 </CardContent>
               </Card>
+              </Grid>
             ))}
-          </Box>
+          </Grid>
         )}
       </Box>
 
