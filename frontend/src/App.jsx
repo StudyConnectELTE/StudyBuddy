@@ -1,30 +1,31 @@
-import { useState } from "react";
-import "./App.css";
-// ha már nem kell a Vite/React logó, ezeket akár ki is veheted
-// import reactLogo from "./assets/react.svg";
-// import viteLogo from "/vite.svg";
-
+import './index.css'
 import { RegisterPage } from "./components/RegisterPage";
+import { toast } from "sonner";
+import { Button } from "./components/ui/button";
 
 function App() {
-  const [user, setUser] = useState(null);
-
   const handleRegister = (userData) => {
-    // itt azt csinálsz az adatokkal, amit akarsz (state, API hívás, stb.)
-    setUser(userData);
-    console.log("registered user:", userData);
+    console.log("✅ Regisztráció:", userData);
+    toast.success("Sikeres regisztráció! 👋", {
+      description: `${userData.name}, üdv a StudyConnect-en!`,
+    });
   };
 
   const handleSwitchToLogin = () => {
-    // később ide jöhet a LoginPage-re váltás
-    console.log("switch to login");
+    console.log("🔄 Login oldalra váltás");
+    toast.info("LoginPage hamarosan... ⏳");
   };
 
   return (
-    <RegisterPage
-      onRegister={handleRegister}
-      onSwitchToLogin={handleSwitchToLogin}
-    />
+    <>
+    
+    <div className="min-h-screen bg-background">
+      <RegisterPage 
+        onRegister={handleRegister}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
+    </div>
+    </>
   );
 }
 
