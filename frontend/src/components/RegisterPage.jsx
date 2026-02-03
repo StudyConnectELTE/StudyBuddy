@@ -8,11 +8,13 @@ import {
   GraduationCap,
   ArrowLeft,
   Search,
+  Heart
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card } from "./ui/card";
+import { Checkbox } from "./ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -128,12 +130,41 @@ const MAJORS = [
   'TTK - vegyész - Szintetikus biomolekuláris és gyógyszerkémia',
 ];
 
+const HOBBIES = [
+  'Sport',
+  'Olvasás',
+  'Zene',
+  'Film',
+  'Fotózás',
+  'Főzés',
+  'Utazás',
+  'Rajzolás',
+  'Festés',
+  'Kertészkedés',
+  'Tánc',
+  'Színház',
+  'Játék',
+  'Programozás',
+  'Matematika',
+  'Tudomány',
+  'Nyelvtanulás',
+  'Jóga',
+  'Meditáció',
+  'Kézműves',
+  'Horgászat',
+  'Kerékpározás',
+  'Futás',
+  'Úszás',
+  'Társasjáték',
+];
+
 export function RegisterPage({ onRegister, onSwitchToLogin }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [major, setMajor] = useState("");
   const [neptuneCode, setNeptuneCode] = useState("");
   const [semester, setSemester] = useState("");
+  const [hobbies, setHobbies] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -169,6 +200,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
         major,
         neptuneCode,
         semester,
+        hobbies,
         registeredAt: new Date().toISOString(),
       };
 
@@ -185,6 +217,14 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
     m.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  const toggleHobby = (hobby) => {
+    setHobbies((prev) =>
+      prev.includes(hobby)
+        ? prev.filter((h) => h !== hobby)
+        : [...prev, hobby]
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 py-8">
       <Card className="w-full max-w-2xl p-8 border-border shadow-lg">
@@ -193,29 +233,30 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to login
+          Bejelentkezés
         </button>
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="mb-2">Create Your Account</h1>
+          <h1 className="mb-2">Regisztráció</h1>
           <p className="text-sm text-muted-foreground">
-            Join StudyConnect and start collaborating
+            Kapcsolódj be a közös tanulásba a StudyConnecttel!
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
           <div>
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">Teljes Név</Label>
+            <div style={{height: 10 + 'px'}}></div>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Thót János"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="pl-10"
@@ -226,13 +267,14 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
 
           {/* Email */}
           <div>
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email">Email-cím</Label>
+            <div style={{height: 10 + 'px'}}></div>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
-                placeholder="student@inf.elte.hu or student@student.hu"
+                placeholder="student@inf.elte.hu vagy student@student.hu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
@@ -240,13 +282,14 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Must end with @inf.elte.hu or @student.hu
+              ELTE-s cím kötelező (@inf.elte.hu vagy @student.hu)
             </p>
           </div>
 
           {/* Major */}
           <div>
-            <Label htmlFor="major">Major</Label>
+            <Label htmlFor="major">Szak</Label>
+            <div style={{height: 10 + 'px'}}></div>
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -258,7 +301,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-muted-foreground" />
                     <span className={major ? "" : "text-muted-foreground"}>
-                      {major || "Select your major..."}
+                      {major || "Válaszd ki a szakodat..."}
                     </span>
                   </div>
                   <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -267,12 +310,12 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
               <PopoverContent className="w-full p-0" align="start">
                 <Command>
                   <CommandInput
-                    placeholder="Search major..."
+                    placeholder="Szak keresés..."
                     value={searchQuery}
                     onValueChange={setSearchQuery}
                   />
                   <CommandList>
-                    <CommandEmpty>No major found.</CommandEmpty>
+                    <CommandEmpty>Nem található ilyen szak.</CommandEmpty>
                     <CommandGroup>
                       {filteredMajors.map((m) => (
                         <CommandItem
@@ -297,50 +340,86 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
           <div className="grid md:grid-cols-2 gap-5">
             {/* Neptune Code */}
             <div>
-              <Label htmlFor="neptune">Neptune Code</Label>
+              <Label htmlFor="neptune">Neptune azonosító</Label>
+              <div style={{height: 10 + 'px'}}></div>
               <div className="relative">
                 <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="neptune"
                   type="text"
-                  placeholder="ABC123"
+                  placeholder="ABCDEFG"
                   value={neptuneCode}
                   onChange={(e) =>
                     setNeptuneCode(e.target.value.toUpperCase())
                   }
                   className="pl-10"
-                  maxLength={6}
+                  maxLength={7}
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                6 characters
+                7 karakter
               </p>
             </div>
 
             {/* Semester */}
             <div>
-              <Label htmlFor="semester">Current Semester</Label>
+              <Label htmlFor="semester">Jelenlegi szemeszter</Label>
+              <div style={{height: 10 + 'px'}}></div>
               <Select value={semester} onValueChange={setSemester}>
                 <SelectTrigger id="semester">
-                  <SelectValue placeholder="Select semester" />
+                  <SelectValue placeholder="Szemeszter kiválasztása" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1st Semester</SelectItem>
-                  <SelectItem value="2">2nd Semester</SelectItem>
-                  <SelectItem value="3">3rd Semester</SelectItem>
-                  <SelectItem value="4">4th Semester</SelectItem>
-                  <SelectItem value="5">5th Semester</SelectItem>
-                  <SelectItem value="6">6th Semester</SelectItem>
-                  <SelectItem value="7">7th Semester</SelectItem>
-                  <SelectItem value="8">8th Semester</SelectItem>
-                  <SelectItem value="9">9th Semester</SelectItem>
-                  <SelectItem value="10">10th Semester</SelectItem>
-                  <SelectItem value="11">11th Semester</SelectItem>
-                  <SelectItem value="12">12th Semester</SelectItem>
+                  <SelectItem value="1">1. Szemeszter</SelectItem>
+                  <SelectItem value="2">2. Szemeszter</SelectItem>
+                  <SelectItem value="3">3. Szemeszter</SelectItem>
+                  <SelectItem value="4">4. Szemeszter</SelectItem>
+                  <SelectItem value="5">5. Szemeszter</SelectItem>
+                  <SelectItem value="6">6. Szemeszter</SelectItem>
+                  <SelectItem value="7">7. Szemeszter</SelectItem>
+                  <SelectItem value="8">8. Szemeszter</SelectItem>
+                  <SelectItem value="9">9. Szemeszter</SelectItem>
+                  <SelectItem value="10">10. Szemeszter</SelectItem>
+                  <SelectItem value="11">11. Szemeszter</SelectItem>
+                  <SelectItem value="12">12. Szemeszter</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Hobbies */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Heart className="w-5 h-5 text-primary" />
+              <Label>Hobbik (Optional)</Label>
+            </div>
+            <div style={{height: 10 + 'px'}}></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {HOBBIES.map((hobby) => (
+                <div
+                  key={hobby}
+                  className="flex items-center space-x-2"
+                >
+                  <Checkbox
+                    id={hobby}
+                    checked={hobbies.includes(hobby)}
+                    onCheckedChange={() => toggleHobby(hobby)}
+                  />
+                  <label
+                    htmlFor={hobby}
+                    className="text-sm cursor-pointer select-none"
+                  >
+                    {hobby}
+                  </label>
+                </div>
+              ))}
+            </div>
+            {hobbies.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {hobbies.length} {hobbies.length === 1 ? "hobby" : "hobbies"} selected
+              </p>
+            )}
           </div>
 
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
@@ -348,11 +427,10 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
               <Lock className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm">
-                  A temporary password will be sent to your email address after
-                  registration.
+                  A regisztráció után egy ideiglenes jelszót küldünk az e-mail címére.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  You can change it later in your profile settings.
+                  Az első belépés után mindenképp változtassa meg biztonsági okok miatt.
                 </p>
               </div>
             </div>
@@ -363,18 +441,18 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
             className="w-full bg-primary hover:bg-primary90 text-white"
             disabled={isLoading}
           >
-            {isLoading ? "Creating Account..." : "Create Account"}
+            {isLoading ? "Fiók létrehozása..." : "Fiók létrehozása"}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+              Már van fiókja?{" "}
             <button
               onClick={onSwitchToLogin}
               className="text-primary hover:underline"
             >
-              Sign in
+              Bejelentkezés
             </button>
           </p>
         </div>
