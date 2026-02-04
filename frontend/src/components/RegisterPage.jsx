@@ -169,9 +169,29 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [secondaryEmail, setSecondaryEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+
 
   const validateEmail = (email) => {
     return email.endsWith("@inf.elte.hu") || email.endsWith("@student.hu");
+  };
+
+  const validateSecondaryEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(email)) {
+      setEmailError('Érvénytelen email formátum');
+      return false;
+    }
+    
+    if (email.endsWith("@inf.elte.hu") || email.endsWith("@student.hu")) {
+      setEmailError('Másodlagos NEM lehet ELTE cím!');
+      return false;
+    }
+    
+    setEmailError('');
+    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -195,17 +215,17 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
     setIsLoading(true);
   
     try {
-      // 👈 userData MOST készül el!
       const userData = {
         name,
         email,
+        secondaryEmail,
         major,
-        neptunCode: neptuneCode,  // 👈 neptuneCode state-ból!
+        neptunCode: neptuneCode,
         semester,
-        hobbies: Array.isArray(hobbies) ? hobbies : [],  // 👈 Biztonságos!
+        hobbies: Array.isArray(hobbies) ? hobbies : [],
       };
   
-      console.log("📤 Küldés:", userData);  // Debug
+      console.log("Küldés:", userData);  // Debug
   
       await authService.register(userData);
       
@@ -214,7 +234,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
       });
       onRegister(userData);
     } catch (error) {
-      console.error("❌ Hiba:", error);
+      console.error("Hiba:", error);
       toast.error(error?.message || "Registration failed!");
     } finally {
       setIsLoading(false);
@@ -277,7 +297,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
 
           {/* Email */}
           <div>
-            <Label htmlFor="email">Email-cím</Label>
+            <Label htmlFor="email">E-mail cím</Label>
             <div style={{height: 10 + 'px'}}></div>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -293,6 +313,33 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               ELTE-s cím kötelező (@inf.elte.hu vagy @student.hu)
+            </p>
+          </div>
+
+          {/* Secondary Email */}
+          <div>
+            <Label htmlFor="secondaryEmail">Másodlagos e-mail cím</Label>
+            <div style={{height: 10 + 'px'}}></div>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="secondaryEmail"
+                type="email"
+                placeholder="student@gmail.com"
+                value={secondaryEmail}
+                onChange={(e) => {
+                  setSecondaryEmail(e.target.value);
+                  validateSecondaryEmail(e.target.value);
+                }}
+                className="pl-10"
+                required
+              />
+            </div>
+            {emailError && (
+              <p className="text-xs text-red-500 mt-1">{emailError}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Nem ELTE-s cím! Erre küldjük az ideiglenes jelszót és az egyetemi levelező rendszer blokkolhatja az üzenetet.
             </p>
           </div>
 

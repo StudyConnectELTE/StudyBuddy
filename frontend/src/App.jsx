@@ -1,15 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";  // 👈 useEffect HOZZÁADVA!
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import './index.css';
 import LoginPage from "./components/LoginPage";
 import {RegisterPage} from "./components/RegisterPage";
-import HomePage from "./components/HomePage";  // Saját HomePage-ed
+import HomePage from "./components/HomePage";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
-// API service auth check-hez
-import { authService } from "./service/api";  // Módosítsd útvonalat[file:4]
+import { authService } from "./service/api";
 
-// Login/Register wrapper - JAVÍTVA: switch navigációval
+function ProtectedHomePage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
+  // Loading state amíg ellenőrzi
+  const isAuthenticated = authService.isAuthenticated();
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-lg text-gray-600">Ellenőrizzük a bejelentkezésed...</div>
+      </div>
+    );
+  }
+
+  return <HomePage />;
+}
+
 function AuthPages() {
   const [currentPage, setCurrentPage] = useState("register");
   const navigate = useNavigate();
@@ -25,17 +45,17 @@ function AuthPages() {
   const handleLogin = (email, password) => {
     console.log("🔐 Bejelentkezés:", { email, password });
     toast.success("Sikeres bejelentkezés! 📚");
-    navigate("/home");  // BEJELENTKEZÉS UTÁN HOME PAGE-RE
+    navigate("/home", { replace: true });  // replace hozzáadva
   };
 
   const handleSwitchToLogin = () => {
     setCurrentPage("login");
-    navigate("/login");  // JAVÍTVA: navigate hozzáadva
+    navigate("/login", { replace: true });
   };
 
   const handleSwitchToRegister = () => {
     setCurrentPage("register");
-    navigate("/register");  // JAVÍTVA: navigate hozzáadva
+    navigate("/register", { replace: true });
   };
 
   return (
@@ -57,28 +77,14 @@ function AuthPages() {
   );
 }
 
-// JAVÍTOTT: Protected HomePage wrapper auth check-kel
-function ProtectedHomePage() {
-  const navigate = useNavigate();
-
-  // Auth ellenőrzés: ha nincs token, login-ra dob
-  if (!authService.isAuthenticated()) {
-    navigate("/login");
-    return null;
-  }
-
-  return <HomePage />;
-}
-
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<ProtectedHomePage />} />  {/* VÉDETT FŐOLDAL */}
-        <Route path="/home" element={<ProtectedHomePage />} />  {/* VÉDETT LOGIN UTÁN */}
+        <Route path="/" element={<ProtectedHomePage />} />
+        <Route path="/home" element={<ProtectedHomePage />} />
         <Route path="/login" element={<AuthPages />} />
         <Route path="/register" element={<AuthPages />} />
-        {/* ÚJ: Search és MyGroups route-ok a HomePage gombjaihoz */}
         <Route path="/search" element={<ProtectedHomePage />} />
         <Route path="/mygroups" element={<ProtectedHomePage />} />
       </Routes>

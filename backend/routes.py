@@ -6,12 +6,15 @@ from datetime import datetime, timedelta, timezone
 from config import Config
 from models import db, User, Group, GroupMember, Post, Comment, Event, PostView, PostAttachment, CommentAttachment
 import os
-import requests
-from werkzeug.utils import secure_filename
+import requests # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename # pyright: ignore[reportMissingImports]
 from config import Config
 import secrets
 import string
-from flask_mail import Message, current_app
+from flask_mail import Message, current_app # pyright: ignore[reportMissingImports]
+import resend  # pyright: ignore[reportMissingImports]
+
+resend.api_key = os.getenv('RESEND_API_KEY')  # .env-ből!
 
 
 TANREND_API_URL = "https://elte-orarend.vercel.app"
@@ -28,6 +31,26 @@ class Config:
 
 # Email minta
 ELTE_EMAIL_REGEX = r"^[a-zA-Z0-9._%+-]+@(student\.elte\.hu|inf\.elte\.hu)$"
+
+
+def validate_secondary_email(primary_email, secondary_email):
+    import re
+    email_regex = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+    
+    # 1. Formátum ellenőrzés
+    if not email_regex.match(secondary_email):
+        return False, "Érvénytelen email formátum"
+    
+    # 2. Nem egyezik ELTE-vel
+    if secondary_email.lower() == primary_email.lower():
+        return False, "Másodlagos NEM lehet ELTE cím!"
+    
+    # 3. Nem ELTE domain
+    if 'inf.elte.hu' in secondary_email.lower() or 'student.elte.hu' in secondary_email.lower():
+        return False, "Másodlagos legyen Gmail/Proton!"
+    
+    return True, "✅ OK"
+
 
 def generate_temp_password(length=12):
     """Generál random erős jelszót: betűk, számok, speciális karakterek."""
@@ -57,7 +80,7 @@ def verify_jwt_token(token):
 
 def register_routes(app):
     # Mailtrap app-ból jön
-    mail = app.extensions['mail']  # Vagy current_app.extensions['mail']
+    mail = app.extensions['mail']
     
     @app.route("/register", methods=["POST","OPTIONS"])
     def register():
@@ -65,23 +88,21 @@ def register_routes(app):
             return "", 200
         
         data = request.get_json()
-        print("📥 NYERS DATA:", data)  # 👈 DEBUG PRINT!
+        
         if not data:
             return jsonify({"error": "Hibás JSON formátum", "code": 400}), 400
         
         mail = current_app.extensions.get('mail')
-        if not mail:
-            print("❌ MAIL NEM INICIALIZÁLT!")
 
         if isinstance(data, dict) and len(data) == 1 and 'email' in data:
-            
             data = data['email']
         
         email = data.get("email")
-        print("📧 EMAIL:", email, type(email))  # 👈 DEBUG!
+        secondary_email = data.get('secondaryEmail') or data.get('secondary_email')
 
-        if isinstance(email, dict):  # 👈 BIZTONSÁG!
-            print("❌ EMAIL DICT!:", email)
+
+        if isinstance(email, dict):
+            print("EMAIL DICT!:", email)
             return jsonify({"error": "Email formátum hiba!"}), 400
     
         name = data.get("name")
@@ -101,6 +122,12 @@ def register_routes(app):
             return jsonify({"message": "Ez az email már regisztrálva van!"}), 400
         if neptun_code and len(neptun_code) != 6:
             return jsonify({"message": "Neptun kód 6 karakter legyen!"}), 400
+        if not secondary_email:
+            return jsonify({"message": "Másodlagos email kötelező!"}), 400
+
+        is_valid, error_msg = validate_secondary_email(email, secondary_email)
+        if not is_valid:
+            return jsonify({"message": error_msg}), 400
 
         # Random temp jelszó
         temp_password = generate_temp_password()
@@ -109,6 +136,7 @@ def register_routes(app):
         # Új user
         new_user = User(
             email=email,
+            secondary_email=secondary_email,
             password_hash=password_hash,
             major=major,
             name=name,
@@ -122,29 +150,53 @@ def register_routes(app):
 
         # Email küldés
         try:
-            msg = Message(
-                "Üdv a StudyConnect világában! - Ideiglenes jelszavad",
-                sender=app.config['MAIL_DEFAULT_SENDER'],
-                recipients=[email]
+            headers = {
+                'accept': 'application/json',
+                'api-key': os.getenv('BREVO_API_KEY'),
+                'content-type': 'application/json'
+            }
+            
+            response = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers=headers,
+                json={
+                    'sender': {'name': 'StudyConnect', 'email': 'studyconnectnoreply@gmail.com'},  
+                    'to': [{'email': secondary_email, 'name': name}],
+                    'subject': f'🎓 StudyConnect - Üdv, {name.split()[0]}!',
+                    'htmlContent': f"""
+                    <html>
+                        <body style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 600px; padding: 40px 20px; line-height: 1.6; color: #333;'>
+                            <h2 style='color: #2c3e50; margin: 0 0 30px 0; font-size: 24px; font-weight: 600;'>Sikeres regisztráció!</h2>
+                            
+                            <div style='background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 30px; margin: 0 0 30px 0;'>
+                                <h3 style='margin: 0 0 20px 0; color: #495057; font-size: 16px; font-weight: 500;'>Ideiglenes jelszavad:</h3>
+                                <div style='background: white; border: 2px solid #dee2e6; border-radius: 6px; padding: 20px; text-align: center;'>
+                                    <h1 style='letter-spacing: 2px; font-size: 28px; margin: 0; font-weight: 700; color: #2c3e50; font-family: monospace;'>{temp_password}</h1>
+                                </div>
+                                <p style='margin: 20px 0 0 0; color: #6c757d; font-size: 14px;'>
+                                    Első belépés után cseréld le a jelszót!
+                                </p>
+                            </div>
+                            
+                            <hr style='border: none; border-top: 1px solid #e9ecef; margin: 40px 0;'>
+                            <p style='color: #6c757d; font-size: 14px; margin: 0;'>
+                                Üdvözlettel,<br>
+                                <strong>StudyConnect Team</strong>
+                            </p>
+                        </body>
+                        </html>
+                    """
+                }
             )
-            msg.html = f"""
-            <html>
-            <body>
-                <h2>Kedves {name}!</h2>
-                <p>Sikeresen regisztráltál a StudyConnect-re. 🎉</p>
-                <h3><strong>Ideiglenes jelszavad:</strong> <code style='background:#f0f0f0;padding:5px'>{temp_password}</code></h3>
-                <p><em>Belépés után <strong>mindenképp cseréld meg</strong> biztonsági okokból!</em></p>
-                <p>Ha nem te regisztráltál, nyugodtan törölheted ezt az emailt.</p>
-                <hr>
-                <p>Üdvözlettel,<br><strong>StudyConnect Team</strong></p>
-            </body>
-            </html>
-            """
-            mail.send(msg)
-            print(f"Email elküldve: {email}")
+            
+            print(f"BREVO STATUS: {response.status_code}")
+            if response.status_code in [201, 202]:
+                print(f"BREVO: Email SIKERESEN elküldve {email}-re!")
+            else:
+                print(f"BREVO HIBA: {response.text[:200]}")
+                
         except Exception as e:
-            print(f"Email hiba: {e}")
-            # Regisztráció marad sikeres!
+            print(f"BREVO Exception: {str(e)}")
 
         return jsonify({
             "user": {
@@ -155,10 +207,11 @@ def register_routes(app):
                 "hobbies": new_user.hobbies,
                 "avatar_url": new_user.avatar_url,
                 "neptun_code": new_user.neptun_code,
-                "semester": new_user.current_semester
+                "semester": new_user.current_semester,
+                "secondary_email": new_user.secondary_email
             },
             "token": create_jwt_token(new_user.id),
-            "message": "Sikeres regisztráció! Ellenőrizd az email fiókodat! 📧"
+            "message": f"Sikeres regisztráció! Jelszó elküldve {secondary_email}-re! 📧"
         }), 201
 
     @app.route("/login", methods=["POST", "OPTIONS"])

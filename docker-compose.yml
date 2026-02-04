@@ -34,6 +34,8 @@ services:
       TANREND_API_URL: "http://elte_tanrend_api:3001"
       PYTHONPATH: /app
     command: ["sh", "-c", "/app/entrypoint.sh"]  # Hot reload
+    env_file:
+    - ./backend/.env  # ← RESEND kulcs ide!
 
 
   frontend:
