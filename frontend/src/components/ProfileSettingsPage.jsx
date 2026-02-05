@@ -8,6 +8,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/Dialog";
 import { toast } from "sonner";
+import { authService } from "../service/api";  // 👈 HOZZÁADANDÓ!
+
 
 export function ProfileSettingsPage() {
   const navigate = useNavigate();  // ✅ useNavigate React Router-ból
@@ -32,38 +34,40 @@ export function ProfileSettingsPage() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Felhasználói adatok betöltése
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserData = () => {
       try {
-        // localStorage-ból (ha van auth token)
-        const userToken = localStorage.getItem('authToken');
-        const storedUser = localStorage.getItem('userData');
+        const user = authService.getUser();
+        console.log('🔍 authService.getUser():', user);  // 👈 DEBUG!
         
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUserData(parsedUser);
-        } else if (userToken) {
-          // API hívás - cseréld ki a saját endpointodra
-          const response = await fetch('http://localhost:5000/api/user/profile', {
-            headers: {
-              'Authorization': `Bearer ${userToken}`
-            }
-          });
-          const data = await response.json();
-          setUserData(data);
-          localStorage.setItem('userData', JSON.stringify(data));
+        if (user) {
+          const profileData = {
+            name: user.name || 'Nincs név',
+            email: user.email || 'Nincs email',
+            major: user.major || 'Nincs szak megadva',
+            year: user.current_semester || 'Nincs évfolyam',
+            studentId: user.neptun_code || 'Nincs Neptun',
+            phone: user.secondary_email || 'Nincs telefonszám',
+            joinedDate: '2026', 
+            groupsJoined: 0, 
+            totalStudyHours: 0,
+            hobbies: user.hobbies ? user.hobbies.split(',') : []  // 👈 VESSZŐ!
+          };
+          console.log('📊 profileData:', profileData);  // 👈 DEBUG!
+          setUserData(profileData);
+        } else {
+          navigate('/login');
         }
       } catch (error) {
-        console.error('Hiba felhasználói adatok betöltésekor:', error);
-        toast.error('Hiba történt a profiladatok betöltésekor');
+        console.error('Profil hiba:', error);
+        navigate('/login');
       } finally {
         setLoading(false);
       }
     };
-
     fetchUserData();
-  }, []);
+  }, [navigate]);
+  
 
   // Fallback adatok ha nincs userData
   const displayData = userData || {
@@ -89,35 +93,45 @@ export function ProfileSettingsPage() {
       .slice(0, 2);
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("Kérlek töltsd ki az összes mezőt");
       return;
     }
-
+  
     if (newPassword !== confirmPassword) {
       toast.error("Az új jelszavak nem egyeznek");
       return;
     }
-
+  
     if (newPassword.length < 8) {
       toast.error("A jelszónak legalább 8 karakter hosszúnak kell lennie");
       return;
     }
-
+  
     setIsChangingPassword(true);
-
-    setTimeout(() => {
-      toast.success("Jelszó sikeresen megváltoztatva");
+  
+    try {
+      // 👈 IGAZI API HÍVÁS!
+      await authService.changePassword(currentPassword, newPassword);
+      toast.success("✅ Jelszó sikeresen megváltoztatva!");
+      
+      // Űrlap törlése
       setShowPasswordDialog(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      
+    } catch (error) {
+      console.error('Jelszóváltoztatás hiba:', error);
+      toast.error(error || "Hiba történt a jelszóváltoztatáskor");
+    } finally {
       setIsChangingPassword(false);
-    }, 1000);
+    }
   };
+  
 
   if (loading) {
     return (
@@ -156,29 +170,29 @@ export function ProfileSettingsPage() {
             <Card className="p-6 border-border">
               <div className="text-center">
                 <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <span className="text-white text-3xl">{getInitials(displayData.name)}</span>
+                  <span className="text-white text-3xl">{getInitials(userData.name)}</span>
                 </div>
-                <h2 className="mb-1">{displayData.name}</h2>
-                <p className="text-sm text-muted-foreground mb-4">{displayData.major}</p>
+                <h2 className="mb-1">{userData.name}</h2>
+                <p className="text-sm text-muted-foreground mb-4">{userData.major}</p>
                 
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
                   <School className="w-4 h-4" />
-                  <span>{displayData.year}</span>
+                  <span>{userData.year}. szemeszter</span>
                 </div>
               </div>
 
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Csoportok száma</span>
-                  <span>{displayData.groupsJoined}</span>
+                  <span>{userData.groupsJoined}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tanulási órák</span>
-                  <span>{displayData.totalStudyHours}h</span>
+                  <span>{userData.totalStudyHours}h</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tag óta</span>
-                  <span>{displayData.joinedDate}</span>
+                  <span>{userData.joinedDate}</span>
                 </div>
               </div>
             </Card>
@@ -201,11 +215,11 @@ export function ProfileSettingsPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground text-sm mb-2 block">Teljes név</Label>
-                    <div className="text-sm">{displayData.name}</div>
+                    <div className="text-sm">{userData.name}</div>
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-sm mb-2 block">Neptun/kód</Label>
-                    <div className="text-sm">{displayData.studentId}</div>
+                    <div className="text-sm">{userData.studentId}</div>
                   </div>
                 </div>
 
@@ -214,14 +228,14 @@ export function ProfileSettingsPage() {
                     <Label className="text-muted-foreground text-sm mb-2 block">Email cím</Label>
                     <div className="flex items-center gap-2 text-sm">
                       <Mail className="w-4 h-4 text-muted-foreground" />
-                      <span>{displayData.email}</span>
+                      <span>{userData.email}</span>
                     </div>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">Telefonszám</Label>
+                    <Label className="text-muted-foreground text-sm mb-2 block">Másodlagos email cím</Label>
                     <div className="flex items-center gap-2 text-sm">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <span>{displayData.phone || 'Nincs megadva'}</span>
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span>{userData.phone || 'Nincs megadva'}</span>
                     </div>
                   </div>
                 </div>
@@ -238,7 +252,7 @@ export function ProfileSettingsPage() {
                     <Label className="text-muted-foreground text-sm mb-2 block">Évfolyam</Label>
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>{displayData.year}</span>
+                      <span>{userData.year}. szemeszter</span>
                     </div>
                   </div>
                 </div>
@@ -254,12 +268,12 @@ export function ProfileSettingsPage() {
                   </div>
                   <div>
                     <h3>Hobbi & Érdeklődési körök</h3>
-                    <p className="text-sm text-muted-foreground">Kiválasztott hobbid</p>
+                    <p className="text-sm text-muted-foreground">Kiválasztott hobbik</p>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {displayData.hobbies.map((hobby) => (
+                  {userData.hobbies.map((hobby) => (
                     <div
                       key={hobby}
                       className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm border border-primary/20"
@@ -301,6 +315,7 @@ export function ProfileSettingsPage() {
                   <form onSubmit={handlePasswordChange} className="space-y-4">
                     <div>
                       <Label htmlFor="current-password">Jelenlegi jelszó</Label>
+                      <div style={{height: 10 + 'px'}}></div>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -323,6 +338,7 @@ export function ProfileSettingsPage() {
 
                     <div>
                       <Label htmlFor="new-password">Új jelszó</Label>
+                      <div style={{height: 10 + 'px'}}></div>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -348,6 +364,7 @@ export function ProfileSettingsPage() {
 
                     <div>
                       <Label htmlFor="confirm-password">Új jelszó megerősítése</Label>
+                      <div style={{height: 10 + 'px'}}></div>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input

@@ -238,7 +238,10 @@ def register_routes(app):
                 "email": user.email,
                 "name": user.name,
                 "major": user.major,
-                "hobbies": user.hobbies
+                "hobbies": user.hobbies,
+                "neptun_code": user.neptun_code,
+                "secondary_email": user.secondary_email,
+                "current_semester": user.current_semester
             },
             "message": "Sikeres bejelentkezés!", 
             "token": token,
@@ -270,7 +273,10 @@ def register_routes(app):
             "major": user.major,
             "name": user.name,
             "hobbies": user.hobbies,
-            "avatar_url": user.avatar_url
+            "avatar_url": user.avatar_url,
+            "neptun_code": user.neptun_code,
+            "secondary_email": user.secondary_email,
+            "current_semester": user.current_semester
         })
     
     
@@ -1778,6 +1784,71 @@ def register_routes(app):
         return jsonify({
             "message": f"Új jelszó elküldve {send_to_email}-re! 📧"
         }), 200
+    
+    @app.route('/change-password', methods=['PUT'])
+    def change_password():
+        auth_header = request.headers.get('Authorization')
+        print(f'🔍 Eljut idáig - Header: {auth_header}')
+        
+        if not auth_header:
+            return jsonify({'error': 'Hiányzik Authorization header'}), 401
+        
+        try:
+            token = auth_header.split(' ')[1]
+            decoded = verify_jwt_token(token)
+            print(f'🔍 JWT decoded: {decoded}')  # DEBUG!
+            
+            if not decoded:
+                return jsonify({'error': 'Érvénytelen vagy lejárt token'}), 401
+            
+            # 👈 'userid' → 'id' !
+            user_id = decoded['user_id']  # VAGY decoded.get('userid')
+            print(f'🔍 User ID: {user_id}')
+            
+            user = db.session.get(User, user_id)
+            if not user:
+                return jsonify({'error': 'Felhasználó nem található'}), 404
+            
+            data = request.get_json()
+            current_password = data.get('current_password')
+            new_password = data.get('new_password')
+            
+            if not current_password or not new_password:
+                return jsonify({'error': 'Mindkét jelszó megadása kötelező'}), 400
+            
+            if not bcrypt.checkpw(current_password.encode('utf-8'), user.password_hash.encode('utf-8')):
+                return jsonify({'error': 'Hibás jelenlegi jelszó'}), 401
+            
+            if len(new_password) < 8:
+                return jsonify({'error': 'Új jelszó legalább 8 karakter legyen'}), 400
+            
+            # Új jelszó hash-elése
+            new_password_hash = bcrypt.hashpw(
+                new_password.encode('utf-8'), 
+                bcrypt.gensalt()
+            ).decode('utf-8')
+            
+            user.password_hash = new_password_hash
+            db.session.commit()
+            
+            return jsonify({
+                'message': 'Jelszó sikeresen megváltoztatva',
+                'user': {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.name,
+                    "major": user.major,
+                    "hobbies": user.hobbies,
+                    "neptun_code": user.neptun_code,
+                    "secondary_email": user.secondary_email,
+                    "current_semester": user.current_semester
+                }
+            }), 200
+            
+        except Exception as e:
+            print(f'Jelszóváltoztatás hiba: {e}')
+            return jsonify({'error': 'Szerver hiba történt'}), 500
+
 
 
 

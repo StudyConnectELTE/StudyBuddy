@@ -81,6 +81,28 @@ const authService = {
   isAuthenticated: () => {
     return !!localStorage.getItem("authToken");
   },
+    // Jelszóváltoztatás - ÚJ FÜGGVÉNY!
+  changePassword: async (currentPassword, newPassword) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await api.put('/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Sikeres → localStorage frissítés
+      if (response.data.user) {
+        localStorage.setItem('authUser', JSON.stringify(response.data.user));
+      }
+      
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Jelszóváltoztatás sikertelen az api-n';
+    }
+  }
+
 };
 
 // GROUP SERVICE
