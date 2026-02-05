@@ -139,7 +139,7 @@ function HomePage() {
           
           <div className="grid md:grid-cols-3 gap-6">
             <button
-              onClick={handleLogout}
+              onClick={() => navigate("/search")}
               className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">

@@ -298,7 +298,7 @@ def register_routes(app):
 
         # Keresési paraméterek
         query = request.args.get("q", "").strip()
-        year = request.args.get("year", "2025-2026-1")
+        year = request.args.get("year", "2025-2026-2")
 
         if not query:
             return jsonify([])

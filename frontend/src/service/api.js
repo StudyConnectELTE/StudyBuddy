@@ -398,7 +398,7 @@ const eventService = {
 
 // SUBJECT SERVICE
 const subjectService = {
-  searchSubjects: async (query, year = "2025-2026-1") => {
+  searchSubjects: async (query, year = "2025-2026-2") => {
     const token = getAuthToken();
     const response = await api.get(
       `/subjects/search?q=${encodeURIComponent(query)}&year=${encodeURIComponent(year)}`,
