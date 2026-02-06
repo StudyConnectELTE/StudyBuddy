@@ -4,12 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  Close as CloseIcon,
+  X as CloseIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
 } from "lucide-react";
-import { eventService } from "../../services/api";
-import { authService } from "../../services/api";
+import { eventService } from "../../service/api";
+import { authService } from "../../service/api";
 
 const Calendar = ({ open, onClose, groupId }) => {
   const [events, setEvents] = useState([]);

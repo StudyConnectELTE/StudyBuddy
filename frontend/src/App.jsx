@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { authService } from "./service/api";
 import {ProfileSettingsPage} from "./components/ProfileSettingsPage";
 import {SearchPage} from "./components/SearchPage";
+import MyGroupsPage from "./components/MyGroupsPage";
+import ForumPage from "./components/ForumPage";
 
 function ProtectedHomePage() {
   const navigate = useNavigate();
@@ -87,9 +89,10 @@ function App() {
         <Route path="/home" element={<ProtectedHomePage />} />
         <Route path="/login" element={<AuthPages />} />
         <Route path="/register" element={<AuthPages />} />
-        <Route path="/mygroups" element={<ProtectedHomePage />} />
         <Route path="/profile" element={<ProfileSettingsPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/mygroups" element={<MyGroupsPage />} />
+        <Route path="/dashboard" element={<ForumPage />} />
       </Routes>
       <Toaster position="top-right" richColors closeButton />
     </Router>

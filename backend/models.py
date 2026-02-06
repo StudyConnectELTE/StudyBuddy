@@ -9,7 +9,7 @@ class User(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True) 
-    secondary_email = db.Column(db.String(120), unique=True, nullable=False, index=True) 
+    secondary_email = db.Column(db.String(120), unique=False, nullable=False, index=True) 
     password_hash = db.Column(db.String(200), nullable=False)
     
     major = db.Column(db.String(100), nullable=True)
