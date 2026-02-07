@@ -391,64 +391,46 @@ const MembersDialog = ({ groupId, members = [] }) => (
   </Dialog>
 );
 
-// CalendarDialog
-const CalendarDialog = ({ 
-  groupId, showCalendar, setShowCalendar, selectedDate, setSelectedDate,
-  newEventTitle, setNewEventTitle, newEventTime, setNewEventTime,
-  newEventDescription, setNewEventDescription, events, onCreateEvent, loadingEvents 
-}) => (
-  <Dialog open={showCalendar} onOpenChange={setShowCalendar}>
-    <DialogTrigger asChild>
-      <Button variant="outline" className="rounded-xl border-primary/30 hover:bg-primary/5 hover:border-primary transition-all">
-        <CalendarIcon className="w-4 h-4 mr-2" />
-        Naptár
-      </Button>
-    </DialogTrigger>
-    <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-      <DialogHeader>
-        <DialogTitle>Csoport naptár</DialogTitle>
-        <DialogDescription>Tanulási események megtekintése és létrehozása</DialogDescription>
-      </DialogHeader>
-      <div className="grid md:grid-cols-2 gap-6 flex-1 overflow-hidden">
-        <div className="overflow-auto">
-          <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} className="rounded-md border" />
+// forumpageuj.txt - CalendarDialog cseréld ki erre:
+const CalendarDialog = ({ groupId, showCalendar, setShowCalendar, onEventCreated, onEventDeleted }) => {
+  return showCalendar ? (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gradient-to-br from-slate-900/95 to-blue-900/95 animate-in fade-in zoom-in duration-300">
+      <div className="w-full h-full max-w-5xl max-h-5xl bg-gradient-to-br from-white via-slate-50/90 to-blue-50/80 backdrop-blur-xl shadow-2xl border border-white/20 rounded-3xl overflow-hidden flex flex-col ring-2 ring-white/30">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white p-6 flex justify-between items-center shadow-2xl border-b border-white/10 flex-shrink-0">
+          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight drop-shadow-lg">
+            📅 Csoport Naptár
+          </h2>
+          <button 
+            onClick={() => setShowCalendar(false)} 
+            className="p-2 hover:bg-white/20 rounded-2xl transition-all duration-300 hover:scale-110 backdrop-blur-sm shadow-lg"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
-        <div className="space-y-4 overflow-auto">
-          <div>
-            <Label htmlFor="event-title">Esemény címe</Label>
-            <Input id="event-title" placeholder="Pl: Analízis 1 felkészülés" value={newEventTitle} onChange={(e) => setNewEventTitle(e.target.value)} className="mt-2" />
-          </div>
-          <div>
-            <Label htmlFor="event-time">Időpont</Label>
-            <Input id="event-time" type="time" value={newEventTime} onChange={(e) => setNewEventTime(e.target.value)} className="mt-2" />
-          </div>
-          <div>
-            <Label htmlFor="event-description">Leírás (opcionális)</Label>
-            <Textarea id="event-description" placeholder="További részletek..." value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="mt-2" rows={3} />
-          </div>
-          <Button onClick={onCreateEvent} disabled={!newEventTitle.trim() || !newEventTime} className="w-full bg-primary hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" />
-            Esemény létrehozása
-          </Button>
-          <div className="pt-4 border-t">
-            <h4 className="mb-3 font-medium">Közeledő események {loadingEvents && '(Betöltés...)'}</h4>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {events?.map((event) => (
-                <div key={event.id} className="p-3 bg-secondary/50 rounded-lg text-sm">
-                  <div className="font-medium">{event.title}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(event.date).toLocaleDateString('hu-HU')} {event.time || new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </div>
-                </div>
-              ))}
-              {events?.length === 0 && !loadingEvents && <div className="text-center py-4 text-muted-foreground text-sm">Még nincsenek események</div>}
-            </div>
-          </div>
+
+        {/* Calendar közvetlenül */}
+        <div className="flex-1 overflow-hidden">
+          <Calendar
+            open={showCalendar}
+            onClose={() => setShowCalendar(false)}
+            groupId={groupId}
+            onEventCreated={onEventCreated}
+            onEventDeleted={onEventDeleted}
+          />
         </div>
       </div>
-    </DialogContent>
-  </Dialog>
-);
+    </div>
+  ) : null;
+};
+
+
+
+
+
+
+
+
 
 const ForumPage = ({ 
   groupName, 
@@ -480,6 +462,7 @@ const ForumPage = ({
   const [commentContent, setCommentContent] = useState({});
   const [commentFiles, setCommentFiles] = useState({});
   const [showComments, setShowComments] = useState({});
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   // Szerkesztési állapotok
   const [editingPost, setEditingPost] = useState(null);
@@ -487,15 +470,12 @@ const ForumPage = ({
 
   // Naptár állapotok
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [newEventTitle, setNewEventTitle] = useState("");
-  const [newEventTime, setNewEventTime] = useState("");
-  const [newEventDescription, setNewEventDescription] = useState("");
 
-  const showToast = (message, type = "error") => {
+  const showToast = useCallback((message, type = "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 5000);
-  };
+  });
+
 
   // Aktuális user betöltése
   useEffect(() => {
@@ -503,6 +483,33 @@ const ForumPage = ({
     setCurrentUser(user);
   }, []);
 
+  // Események betöltése oldal betöltéskor ÉS új esemény létrehozásakor
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (!groupId) return;
+      try {
+        const eventsData = await eventService.getEvents(groupId);
+        setEvents(eventsData || []);
+      } catch (error) {
+        console.error("Események betöltési hiba:", error);
+      }
+    };
+  
+  loadEvents();
+  }, [groupId]); // Csak groupId változásakor tölt be
+
+
+  // Új esemény kezelő
+  const handleEventCreated = (newEvent) => {
+    setEvents(prev => [newEvent, ...prev]); // Azonnali megjelenítés
+    setIsCalendarOpen(false); // Naptár bezárása
+  };
+  
+  // Törlés handler (handleEventCreated mellé)
+  const handleEventDeleted = (eventId) => {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+  };
+  
   // 1. CSOPORT TAGOK BETÖLTÉSE
   useEffect(() => {
     const loadGroupMembers = async () => {
@@ -817,28 +824,6 @@ const ForumPage = ({
     }
   }, []);
 
-  const handleCreateEvent = async () => {
-    if (!newEventTitle.trim() || !newEventTime || !groupId) {
-      showToast("Esemény név és időpont megadása kötelező!");
-      return;
-    }
-    
-    try {
-      const eventDate = new Date(selectedDate);
-      eventDate.setHours(parseInt(newEventTime.split(':')[0]), parseInt(newEventTime.split(':')[1]));
-      const newEvent = await eventService.createEvent(groupId, newEventTitle, eventDate.toISOString(), newEventDescription, "");
-      setEvents(prev => [{ ...newEvent, time: newEventTime }, ...prev]);
-      setNewEventTitle(""); 
-      setNewEventTime(""); 
-      setNewEventDescription(""); 
-      setShowCalendar(false);
-      showToast("Esemény létrehozva!", "success");
-    } catch (error) {
-      console.error("Error creating event:", error);
-      showToast("Esemény létrehozása sikertelen");
-    }
-  };
-
   if (loadingPosts && posts.length === 0) {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
@@ -882,22 +867,23 @@ const ForumPage = ({
             </div>
             <div className="flex gap-3 flex-wrap">
               <MembersDialog groupId={groupId} members={members} />
+              {/* Naptár gomb – EZ KELL! */}
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCalendar(true)}
+                className="rounded-xl border-primary/30 hover:bg-primary/5"
+              >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Naptár
+              </Button>
               <CalendarDialog 
                 groupId={groupId} 
                 showCalendar={showCalendar} 
                 setShowCalendar={setShowCalendar}
-                selectedDate={selectedDate} 
-                setSelectedDate={setSelectedDate}
-                newEventTitle={newEventTitle} 
-                setNewEventTitle={setNewEventTitle}
-                newEventTime={newEventTime} 
-                setNewEventTime={setNewEventTime}
-                newEventDescription={newEventDescription} 
-                setNewEventDescription={setNewEventDescription}
-                events={events} 
-                onCreateEvent={handleCreateEvent} 
-                loadingEvents={loadingEvents}
+                onEventCreated={handleEventCreated}
+                onEventDeleted={handleEventDeleted}
               />
+
             </div>
           </div>
         </div>

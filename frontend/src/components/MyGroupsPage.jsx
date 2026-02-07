@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { groupService } from "../service/api";
+import { eventService } from "../service/api"; 
 
 const MyGroupsPage = () => {
   const [groups, setGroups] = useState([]);
@@ -35,32 +36,53 @@ const MyGroupsPage = () => {
         const groupsWithMemberCounts = await Promise.all(
           apiGroups.map(async (group) => {
             try {
-              const members = await groupService.getGroupMembers(group.id);
+              const [members, events] = await Promise.all([
+                groupService.getGroupMembers(group.id),
+                eventService.getEvents(group.id)  // ← ESEMÉNYEK LEKÉRDEZÉSE
+              ]);
+        
+              // Legközelebbi esemény keresése
+              const nextEvent = events?.length > 0 
+                ? events
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))[0]  // Legelső
+                : null;
+        
+              const meetingSchedule = nextEvent 
+                ? new Date(nextEvent.date).toLocaleDateString('hu-HU', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                : "Nincs esemény";
+        
               return {
                 id: group.id,
                 name: group.name,
                 subject: group.subject,
                 description: group.description,
-                members: members?.length || 0,  // ← VALÓDI TAG SZÁM!
-                meetingSchedule: "Nincs ütemezve",
+                members: members?.length || 0,
+                meetingSchedule,  // ← DINAMIKUS!
+                nextEventTitle: nextEvent?.title || "",  // Bonus: esemény neve tooltip-hez
                 membersList: [],
                 membersWithEmails: []
               };
             } catch (err) {
-              console.warn(`Tagok lekérdezése sikertelen ${group.id}-hez:`, err);
+              console.warn(`Csoport adatok hiba ${group.id}-hez:`, err);
               return {
                 id: group.id,
                 name: group.name,
                 subject: group.subject,
                 description: group.description,
-                members: 0,  // ← alapértelmezett 0
-                meetingSchedule: "Nincs ütemezve",
+                members: 0,
+                meetingSchedule: "Hiba",  // ← fallback
                 membersList: [],
                 membersWithEmails: []
               };
             }
           })
         );
+        
 
         setGroups(groupsWithMemberCounts);
       } catch (error) {
@@ -182,7 +204,9 @@ const MyGroupsPage = () => {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>{group.meetingSchedule}</span>
+                    <span title={group.nextEventTitle || "Nincs közelgő esemény"}>
+                      {group.meetingSchedule}
+                    </span>
                   </div>
                 </div>
 
@@ -272,7 +296,7 @@ const MyGroupsPage = () => {
             <p className="text-muted-foreground max-w-md mx-auto mb-8">
               Nem csatlakoztál még egyetlen tanulócsoporthoz sem. Kezdd azzal, hogy keresel tárgyakat és csatlakozol megfelelő csoportokhoz.
             </p>
-            <Button variant="outline" className="text-primary hover:bg-primary/5">
+            <Button variant="outline" className="text-primary hover:bg-primary/5" onClick={() => navigate("/search")}>
               Csoportok keresése
             </Button>
           </div>
