@@ -150,14 +150,6 @@ const MyGroupsPage = () => {
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-        <Button
-            variant="ghost"
-            onClick={() => navigate("/home")}
-            className="mb-4 hover:bg-primary/10 transition-all duration-300"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to the Home Page
-          </Button>
           <h1 className="mb-2 text-3xl font-bold tracking-tight">Saját Csoportjaim</h1>
           <p className="text-muted-foreground text-lg">
             Kezeld tanulócsoportjaidat és maradj kapcsolatban társaiddal

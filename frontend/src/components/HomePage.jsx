@@ -1,26 +1,17 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { BookOpen, Users, Search, Sparkles, MessageSquare, UserPlus, Calendar, User, LogOut} from "lucide-react";  // ÚJ: User icon
+import { BookOpen, Users, Search, Sparkles, MessageSquare, UserPlus, Calendar, User, LogOut} from "lucide-react";
 import { Button } from "./ui/button";
 import { authService } from "../service/api";
 
-
-
-function HomePage() {
-  const navigate = useNavigate();
-
-  // Auth ellenőrzés - ha nincs bejelentkezve, login-ra dob
+function HomePage({ onNavigate}) {
+  
+  // ✅ Auth ellenőrzés - Layout kezeli, itt csak warning
   useEffect(() => {
     if (!authService.isAuthenticated()) {
-      navigate("/login");
+      console.warn("Nem vagy bejelentkezve!");
+      onNavigate?.("login");  // ← State navigáció
     }
-  }, [navigate]);
-
-  // Logout handler
-  const handleLogout = () => {
-    authService.logout();
-    navigate("/login");
-  };
+  }, [onNavigate]);
 
   const features = [
     {
@@ -47,32 +38,10 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pt-0 md:pt-0">
-      {/* Header - KIJELENTKEZÉS + ÚJ PROFIL gomb */}
+      {/* Header - KIJELENTKEZÉS + PROFIL gomb */}
       <header className="container mx-auto px-6 py-4 border-b border-border">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary">StudyConnect</h1>
-          <div className="flex items-center gap-2">
-            {/* ÚJ: Profil gomb */}
-            <Button 
-              onClick={() => navigate("/profile")} 
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 hover:bg-primary/10"
-            >
-              <User className="w-4 h-4" />
-              Profil
-            </Button>
-            {/* Kijelentkezés gomb */}
-            <Button 
-              onClick={handleLogout}
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <LogOut className="w-4 h-4" />
-              Kijelentkezés
-            </Button>
-          </div>
         </div>
       </header>
 
@@ -88,12 +57,12 @@ function HomePage() {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Találd meg a számodra tökéletes tanulócsoportot, lépj kapcsolatba társaiddal, és teljesíts a kurzusaidat a közös tanulás segítségével.
+            Találd meg a számodra tökéletes tanulócsoportot, lépj kapcsolatba társaiddal, és teljesíts a kurzusaidat a közös tanulás segítségével.
           </p>
           
           <div className="flex gap-4 justify-center flex-col sm:flex-row">
             <Button 
-              onClick={() => navigate("/search")}
+              onClick={() => onNavigate("search")}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <Search className="w-5 h-5 mr-2" />
@@ -101,7 +70,7 @@ function HomePage() {
             </Button>
             
             <Button 
-              onClick={() => navigate("/mygroups")}
+              onClick={() => onNavigate("mygroups")}
               variant="outline"
               className="px-8 py-6 text-lg rounded-xl border-2 border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-300"
             >
@@ -139,7 +108,7 @@ function HomePage() {
           
           <div className="grid md:grid-cols-3 gap-6">
             <button
-              onClick={() => navigate("/search")}
+              onClick={() => onNavigate("search")}  // ✅ State: "search"
               className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -150,7 +119,7 @@ function HomePage() {
             </button>
 
             <button
-              onClick={handleLogout}
+              onClick={() => onNavigate("mygroups")}
               className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -161,7 +130,7 @@ function HomePage() {
             </button>
 
             <button
-              onClick={handleLogout}
+              onClick={() => onNavigate("mygroups")}
               className="bg-background/80 hover:bg-background border border-border/50 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
             >
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
