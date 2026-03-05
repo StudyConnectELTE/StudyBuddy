@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from backend.config import Config
+from config import Config
 
 def save_post_files(files):
     upload_dir = os.path.join(Config.UPLOAD_FOLDER, "posts")

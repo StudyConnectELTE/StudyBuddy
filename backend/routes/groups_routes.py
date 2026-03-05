@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from backend.extensions import db
-from backend.models import User, Group, GroupMember
-from backend.services.auth_service import verify_jwt_token
+from extensions import db
+from models import User, Group, GroupMember
+from services.auth_service import verify_jwt_token
 
 groups_bp = Blueprint("groups", __name__)
 

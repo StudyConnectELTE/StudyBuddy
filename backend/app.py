@@ -7,7 +7,7 @@ from flask_migrate import Migrate
 import os  # ← FONTOS: LEGFELÜL!
 from config import Config
 from models import db
-from backend.routes.auth_routes import register
+from routes.auth_routes import auth_bp
 
 def create_app():
     app = Flask(__name__)
@@ -95,7 +95,8 @@ def create_app():
         return send_from_directory(UPLOAD_FOLDER, filepath)
 
     # 9. MAIN ROUTES REGISZTRÁLÁSA
-    register(app)
+    app.register_blueprint(auth_bp)
+    #register(app)
 
     # 10. DB LÉTREHOZÁS (FEJLESZTÉSI)
     with app.app_context():
@@ -103,6 +104,7 @@ def create_app():
 
     return app
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
+    

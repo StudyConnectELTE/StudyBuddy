@@ -2,7 +2,7 @@ import jwt
 import secrets
 import string
 from datetime import datetime, timedelta, timezone
-from backend.config import Config
+from config import Config
 
 def create_jwt_token(user_id):
     expiration = datetime.now(timezone.utc) + timedelta(hours=1)

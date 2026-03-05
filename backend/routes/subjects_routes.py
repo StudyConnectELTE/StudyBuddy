@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 import requests
 import re
-from backend.config import Config
-from backend.services.auth_service import verify_jwt_token
+from config import Config
+from services.auth_service import verify_jwt_token
 
 subjects_bp = Blueprint("subjects", __name__)
 

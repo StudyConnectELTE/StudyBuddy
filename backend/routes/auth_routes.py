@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
 import bcrypt
-from backend.extensions import db
-from backend.models import User
-from backend.services.auth_service import create_jwt_token, generate_temp_password
-from backend.services.validators import validate_secondary_email
-from backend.services.email_service import send_registration_email
-from backend.config import Config
+from models import db
+from models import User
+from services.auth_service import create_jwt_token, generate_temp_password
+from services.validators import validate_secondary_email
+from services.email_service import send_registration_email
+from config import Config
 import re
 
 auth_bp = Blueprint("auth", __name__)

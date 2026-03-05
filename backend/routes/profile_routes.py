@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from backend.services.auth_service import verify_jwt_token
-from backend.extensions import db
-from backend.models import User
+from services.auth_service import verify_jwt_token
+from extensions import db
+from models import User
 
 profile_bp = Blueprint("profile", __name__)
 
