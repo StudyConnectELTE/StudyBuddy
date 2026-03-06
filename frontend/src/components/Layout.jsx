@@ -5,6 +5,7 @@ import HomePage from "./HomePage";
 import { SearchPage } from "./SearchPage";
 import MyGroupsPage from "./MyGroupsPage";
 import { ProfileSettingsPage } from "./ProfileSettingsPage";
+import { PomodoroPage } from "./PomodoroPage";
 import LoginPage from "./LoginPage";
 import { RegisterPage } from "./RegisterPage";
 import { Toaster } from "./ui/sonner";
@@ -141,6 +142,8 @@ export function Layout() {
         return <SearchPage />;
       case "mygroups":
         return <MyGroupsPage />;
+      case "pomodoro":
+        return <PomodoroPage />;
       case "profile":
         return <ProfileSettingsPage userData={userData} />;
       default:
