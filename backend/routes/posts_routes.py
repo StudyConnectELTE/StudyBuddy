@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
-from extensions import db
+from models import db
 from models import Group, GroupMember, Post, PostAttachment
 from services.auth_service import verify_jwt_token
 from services.file_service import save_post_files

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.auth_service import verify_jwt_token
-from extensions import db
+from models import db
 from models import User
 
 profile_bp = Blueprint("profile", __name__)

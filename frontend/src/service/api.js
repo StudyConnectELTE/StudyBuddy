@@ -15,16 +15,9 @@ const api = axios.create({
 const getAuthToken = () => localStorage.getItem("authToken");
 
 const authService = {
-  register: async (email,name, major, hobbies, neptunCode, semester) => {
+  register: async (data) => {
     try {
-      const response = await api.post("/register", {
-        email,
-        name,
-        major,
-        hobbies,
-        neptunCode,
-        semester
-      });
+      const response = await api.post("/register", data);
 
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);

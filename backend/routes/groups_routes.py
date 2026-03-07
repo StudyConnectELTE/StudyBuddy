@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from extensions import db
+from models import db
 from models import User, Group, GroupMember
 from services.auth_service import verify_jwt_token
 
@@ -62,15 +62,19 @@ def search_groups():
         return err, code
 
     user = db.session.get(User, user_id)
-
+    if user:
+        user_interests = set(filter(None, (user.hobbies or "").split(",")))
+    else:
+        user_interests = set()
     subject = request.args.get("q", "").strip()
     if not subject:
         return jsonify({"error": "Hiányzik a keresési kifejezés"}), 400
 
     groups = Group.query.filter(Group.subject.ilike(f"%{subject}%")).all()
 
-    user_interests = set((user.hobbies or "").split(","))
-
+    #user_interests = set((user.hobbies or "").split(","))
+    #user_interests = set(filter(None, (user.hobbies or "").split(",")))
+    
     zero_member_group = None
     group_list = []
     best_group = None

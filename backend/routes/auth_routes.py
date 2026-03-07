@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, json, request, jsonify
 import bcrypt
 from models import db
 from models import User
@@ -10,10 +10,33 @@ import re
 
 auth_bp = Blueprint("auth", __name__)
 
-@auth_bp.route("/register", methods=["POST", "OPTIONS"])
+@auth_bp.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
+    
+    if request.method == "OPTIONS":
+       return jsonify({"status": "ok"}), 200
+
+    #data = request.get_json(silent=True)
+    
+    data = request.get_json(silent=True)
+
+    print("????")
+    print("DATA:", data)
+    print(type(data))
+
+    if not isinstance(data, dict):
+        return jsonify({"message": "Invalid JSON body"}), 400
+    
+    if not data:
+        return jsonify({"message": "Missing JSON body"}), 400
+    
     email = data.get("email")
+    #print("EMAIL:", email, type(email))
+    if isinstance(email, dict):
+        email = email.get("value")
+
+    print("EMAIL:", email, type(email))
+    print("_________")
     secondary = data.get("secondaryEmail")
     name = data.get("name")
     major = data.get("major")
