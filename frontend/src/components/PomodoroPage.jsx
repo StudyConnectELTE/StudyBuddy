@@ -1,20 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
-
-const MODES = {
-  IDLE: "IDLE",
-  FOCUS: "FOCUS",
-  SHORT_BREAK: "SHORT_BREAK",
-  LONG_BREAK: "LONG_BREAK",
-  PAUSED: "PAUSED",
-};
-
-const DEFAULT_FOCUS_MIN = 25;
-const DEFAULT_SHORT_BREAK_MIN = 5;
-const DEFAULT_LONG_BREAK_MIN = 15;
-const CYCLES_BEFORE_LONG_BREAK = 4;
+import { usePomodoro } from "../context/usePomodoro";
 
 function formatTime(seconds) {
   if (seconds == null || seconds < 0) return "25:00";
@@ -23,7 +11,7 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function getModeLabel(mode) {
+function getModeLabel(mode, MODES) {
   switch (mode) {
     case MODES.FOCUS:
       return "Fókusz";
@@ -39,22 +27,27 @@ function getModeLabel(mode) {
 }
 
 export function PomodoroPage() {
-  const [mode, setMode] = useState(MODES.IDLE);
-  const [currentCycle, setCurrentCycle] = useState(0);
-  const [endTime, setEndTime] = useState(null);
-  const [pausedRemainingSec, setPausedRemainingSec] = useState(0);
-  const [pausedFromMode, setPausedFromMode] = useState(null);
-  const [displaySeconds, setDisplaySeconds] = useState(DEFAULT_FOCUS_MIN * 60);
-  const [focusMin, setFocusMin] = useState(DEFAULT_FOCUS_MIN);
-  const [shortBreakMin, setShortBreakMin] = useState(DEFAULT_SHORT_BREAK_MIN);
-  const [longBreakMin, setLongBreakMin] = useState(DEFAULT_LONG_BREAK_MIN);
   const [showSettings, setShowSettings] = useState(false);
-  const tickRef = useRef(null);
+  const {
+    MODES,
+    CYCLES_BEFORE_LONG_BREAK,
+    mode,
+    currentCycle,
+    pausedRemainingSec,
+    displaySeconds,
+    focusMin,
+    shortBreakMin,
+    longBreakMin,
+    setFocusMin,
+    setShortBreakMin,
+    setLongBreakMin,
+    isActive,
+    startFocus,
+    startPause,
+    resume,
+    reset,
+  } = usePomodoro();
 
-  const isActive =
-    mode === MODES.FOCUS ||
-    mode === MODES.SHORT_BREAK ||
-    mode === MODES.LONG_BREAK;
   const totalSecForPhase =
     mode === MODES.FOCUS
       ? focusMin * 60
@@ -71,81 +64,6 @@ export function PomodoroPage() {
         : displaySeconds;
   const progress =
     totalSecForPhase > 0 ? 1 - displaySecondsToShow / totalSecForPhase : 1;
-
-  const startFocus = useCallback(() => {
-    const now = Date.now();
-    setEndTime(now + focusMin * 60 * 1000);
-    setMode(MODES.FOCUS);
-    setCurrentCycle(0);
-  }, [focusMin]);
-
-  const startPause = useCallback(() => {
-    if (!isActive || !endTime) return;
-    const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-    setPausedRemainingSec(remaining);
-    setPausedFromMode(mode);
-    setMode(MODES.PAUSED);
-    setEndTime(null);
-  }, [isActive, endTime, mode]);
-
-  const resume = useCallback(() => {
-    if (mode !== MODES.PAUSED || pausedFromMode == null) return;
-    const now = Date.now();
-    setEndTime(now + pausedRemainingSec * 1000);
-    setMode(pausedFromMode);
-    setPausedFromMode(null);
-    setPausedRemainingSec(0);
-  }, [mode, pausedFromMode, pausedRemainingSec]);
-
-  const reset = useCallback(() => {
-    setMode(MODES.IDLE);
-    setEndTime(null);
-    setPausedRemainingSec(0);
-    setPausedFromMode(null);
-    setDisplaySeconds(focusMin * 60);
-    setCurrentCycle(0);
-  }, [focusMin]);
-
-  const transitionOnPhaseEnd = useCallback(() => {
-    if (mode === MODES.FOCUS) {
-      const nextCycle = currentCycle + 1;
-      if (nextCycle >= CYCLES_BEFORE_LONG_BREAK) {
-        setCurrentCycle(0);
-        setEndTime(Date.now() + longBreakMin * 60 * 1000);
-        setMode(MODES.LONG_BREAK);
-      } else {
-        setCurrentCycle(nextCycle);
-        setEndTime(Date.now() + shortBreakMin * 60 * 1000);
-        setMode(MODES.SHORT_BREAK);
-      }
-    } else if (mode === MODES.SHORT_BREAK) {
-      setEndTime(Date.now() + focusMin * 60 * 1000);
-      setMode(MODES.FOCUS);
-    } else if (mode === MODES.LONG_BREAK) {
-      setEndTime(Date.now() + focusMin * 60 * 1000);
-      setMode(MODES.FOCUS);
-      setCurrentCycle(0);
-    }
-  }, [mode, currentCycle, focusMin, shortBreakMin, longBreakMin]);
-
-  useEffect(() => {
-    if (mode === MODES.PAUSED || mode === MODES.IDLE || !endTime) return;
-
-    const tick = () => {
-      const now = Date.now();
-      const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
-      setDisplaySeconds(remaining);
-      if (remaining <= 0) {
-        transitionOnPhaseEnd();
-      }
-    };
-
-    tick();
-    tickRef.current = setInterval(tick, 1000);
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
-  }, [mode, endTime, transitionOnPhaseEnd]);
 
   const handleStart = () => {
     if (mode === MODES.IDLE) startFocus();
@@ -211,7 +129,7 @@ export function PomodoroPage() {
               {formatTime(displaySecondsToShow)}
             </span>
             <span className="text-sm text-muted-foreground mt-2 font-medium">
-              {getModeLabel(mode)}
+              {getModeLabel(mode, MODES)}
               {mode === MODES.FOCUS && currentCycle > 0 && (
                 <span className="ml-1">
                   ({currentCycle + 1}. / {CYCLES_BEFORE_LONG_BREAK})
