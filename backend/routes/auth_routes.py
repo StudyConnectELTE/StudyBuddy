@@ -7,6 +7,8 @@ from services.validators import validate_secondary_email
 from services.email_service import send_registration_email
 from config import Config
 import re
+import os
+import requests
 
 
 auth_bp = Blueprint("auth", __name__)
