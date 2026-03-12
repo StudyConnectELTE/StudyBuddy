@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { PomodoroContext } from "./pomodoroContext";
+import { PomodoroContext } from "./pomodoroContext2";
 
 const MODES = {
   IDLE: "IDLE",

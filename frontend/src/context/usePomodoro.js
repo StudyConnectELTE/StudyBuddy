@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { PomodoroContext } from "./pomodoroContext";
+import { PomodoroContext } from "./pomodoroContext2";
 
 export function usePomodoro() {
   const ctx = useContext(PomodoroContext);
