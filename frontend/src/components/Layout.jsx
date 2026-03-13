@@ -5,6 +5,8 @@ import HomePage from "./HomePage";
 import { SearchPage } from "./SearchPage";
 import MyGroupsPage from "./MyGroupsPage";
 import { ProfileSettingsPage } from "./ProfileSettingsPage";
+import { PomodoroPage } from "./PomodoroPage";
+import { PomodoroProvider } from "../context/PomodoroContext";
 import LoginPage from "./LoginPage";
 import { RegisterPage } from "./RegisterPage";
 import { Toaster } from "./ui/sonner";
@@ -141,6 +143,8 @@ export function Layout() {
         return <SearchPage />;
       case "mygroups":
         return <MyGroupsPage />;
+      case "pomodoro":
+        return <PomodoroPage />;
       case "profile":
         return <ProfileSettingsPage userData={userData} />;
       default:
@@ -150,27 +154,29 @@ export function Layout() {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row h-screen bg-background">
-        {/* Mobile Navigation - Top */}
-        <MobileNav 
-          currentPage={currentPage} 
-          onPageChange={setCurrentPage}
-          onLogout={handleLogout}
-        />
-        
-        {/* Desktop Sidebar - Left */}
-        <div className="hidden md:block flex-shrink-0">
-          <Sidebar 
+      <PomodoroProvider>
+        <div className="flex flex-col md:flex-row h-screen bg-background">
+          {/* Mobile Navigation - Top */}
+          <MobileNav 
             currentPage={currentPage} 
             onPageChange={setCurrentPage}
             onLogout={handleLogout}
           />
+          
+          {/* Desktop Sidebar - Left */}
+          <div className="hidden md:block flex-shrink-0">
+            <Sidebar 
+              currentPage={currentPage} 
+              onPageChange={setCurrentPage}
+              onLogout={handleLogout}
+            />
+          </div>
+          
+          <main className="flex-1 overflow-auto">
+            {renderContent()}
+          </main>
         </div>
-        
-        <main className="flex-1 overflow-auto">
-          {renderContent()}
-        </main>
-      </div>
+      </PomodoroProvider>
       <Toaster /> {/* ← EZ KELL! */}
     </>
   );
