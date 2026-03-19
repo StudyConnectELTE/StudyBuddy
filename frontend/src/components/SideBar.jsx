@@ -8,6 +8,7 @@ import {
   BookOpen,
   X,
   LogOut,
+  Timer,
 } from "lucide-react";
 
 export function Sidebar({ currentPage, onPageChange, onLogout }) {
@@ -41,6 +42,12 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
       name: "Saját csoportok",
       icon: Users,
       description: "Saját tanulócsoportjaid",
+    },
+    {
+      id: "pomodoro",
+      name: "Pomodoro Timer",
+      icon: Timer,
+      description: "Fókuszálj a tanulásra",
     },
     {
       id: "profile",

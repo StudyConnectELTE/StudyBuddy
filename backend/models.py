@@ -201,6 +201,7 @@ class CommentAttachment(db.Model):
     def __repr__(self):
         return f"<CommentAttachment {self.filename}>"
 
+    
 class UserPomodoroSettings(db.Model):
     __tablename__ = "user_pomodoro_settings"
 

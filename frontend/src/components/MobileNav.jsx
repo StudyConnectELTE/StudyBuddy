@@ -8,6 +8,7 @@ import {
   Users,
   User,
   LogOut,
+  Timer,
 } from "lucide-react";
 import { cn } from "./ui/utils";
 
@@ -32,6 +33,12 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
       name: "My Groups",
       icon: Users,
       description: "Your study groups",
+    },
+    {
+      id: "pomodoro",
+      name: "Pomodoro Timer",
+      icon: Timer,
+      description: "Focus on studying",
     },
     {
       id: "profile",
