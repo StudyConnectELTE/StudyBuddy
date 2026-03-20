@@ -28,7 +28,7 @@ function getModeLabel(mode, MODES) {
 
 export function PomodoroPage() {
   const [isGroupSession, setIsGroupSession] = useState(false);
-  const [tasks, setTasks] = useState("");
+  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
   const [focusCount, setFocusCount] = useState(4);
   const [autoFocusStart, setAutoFocusStart] = useState(true);
@@ -39,6 +39,8 @@ export function PomodoroPage() {
   const [showLegacySettings, setShowLegacySettings] = useState(false);
   const [showSessionSetup, setShowSessionSetup] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const [sessionPhases, setSessionPhases] = useState([]);
 
   const {
     MODES,
@@ -58,6 +60,7 @@ export function PomodoroPage() {
     startPause,
     resume,
     reset,
+    completedPhases,
   } = usePomodoro();
 
   const totalSecForPhase =
@@ -78,6 +81,18 @@ export function PomodoroPage() {
 
   const progress =
     totalSecForPhase > 0 ? 1 - displaySecondsToShow / totalSecForPhase : 1;
+
+  const buildSessionPhases = () => {
+    const phases = [];
+    for (let i = 1; i <= focusCount; i++) {
+      phases.push({ label: `${i}. Fókusz` });
+      if (i < focusCount) {
+        phases.push({ label: `${i}. Rövid szünet` });
+      }
+    }
+    phases.push({ label: "Hosszú szünet" });
+    return phases;
+  };
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
@@ -101,8 +116,12 @@ export function PomodoroPage() {
   };
 
   const handleStartSession = () => {
-    if (mode === MODES.IDLE) startFocus();
-    else if (mode === MODES.PAUSED) resume();
+    if (mode === MODES.IDLE) {
+      setSessionPhases(buildSessionPhases());
+      startFocus();
+    } else if (mode === MODES.PAUSED) {
+      resume();
+    }
     setShowSessionSetup(false);
   };
 
@@ -118,6 +137,9 @@ export function PomodoroPage() {
     reset();
     setShowSessionSetup(true);
     setShowResetConfirm(false);
+    // opcionális:
+    // setTasks([]);
+    // setSessionPhases([]);
   };
 
   const cancelFullReset = () => {
@@ -126,7 +148,7 @@ export function PomodoroPage() {
 
   return (
     <div className="min-h-screen bg-background pt-0 md:pt-0 flex flex-col">
-      <div className="container mx-auto px-6 py-6 max-w-4xl flex-1 flex flex-col">
+      <div className="container mx-auto px-4 py-6 max-w-6xl flex-1 flex flex-col">
         <header className="text-center mb-6">
           <h1 className="text-2xl font-bold text-foreground">Pomodoro Timer</h1>
           <p className="text-muted-foreground mt-1 text-sm">
@@ -136,7 +158,6 @@ export function PomodoroPage() {
         </header>
 
         {showSessionSetup ? (
-          // Setup panel középen
           <div className="w-full max-w-xl mx-auto mb-6 p-4 rounded-xl bg-muted/50 space-y-4">
             <div className="flex gap-3 text-sm">
               <button
@@ -300,9 +321,8 @@ export function PomodoroPage() {
             </div>
           </div>
         ) : (
-          // kétoszlopos layout: bal szélén taskok, mellette timer
-          <div className="flex-1 flex flex-col md:flex-row gap-6 items-start">
-            {/* Bal: session feladatok panel a legszélen */}
+          <div className="flex-1 flex flex-col md:flex-row gap-10 lg:gap-16 items-start">
+            {/* Bal: session feladatok panel */}
             <div className="w-full md:w-64 lg:w-72 md:self-stretch rounded-xl border border-border bg-muted/40 p-4 flex flex-col">
               <h2 className="text-sm font-semibold text-foreground mb-2">
                 Session feladatok
@@ -338,9 +358,9 @@ export function PomodoroPage() {
               )}
             </div>
 
-            {/* Jobb: timer blokk, a jobb oldali terület közepén */}
+            {/* Közép: timer blokk */}
             <div className="flex-1 flex flex-col items-center">
-              <div className="relative flex justify-center items-center w-full max-w-[min(90vw,28rem)] aspect-square my-4 mx-auto">
+              <div className="relative flex justify-center items-center w-full max-w-[min(90vw,20rem)] md:max-w-[min(90vw,24rem)] aspect-square my-4 mx-auto">
                 <svg
                   className="w-full h-full -rotate-90"
                   viewBox="0 0 100 100"
@@ -380,7 +400,7 @@ export function PomodoroPage() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-6xl sm:text-7xl md:text-8xl font-semibold tabular-nums text-foreground tracking-tight">
+                  <span className="text-5xl sm:text-6xl md:text-7xl font-semibold tabular-nums text-foreground tracking-tight">
                     {formatTime(displaySecondsToShow)}
                   </span>
                   <span className="text-sm text-muted-foreground mt-2 font-medium">
@@ -422,6 +442,45 @@ export function PomodoroPage() {
                   </Button>
                 )}
               </div>
+            </div>
+
+            {/* Jobb: session fázisok listája */}
+            <div className="w-full md:w-64 lg:w-72 md:self-stretch rounded-xl border border-border bg-muted/40 p-4 flex flex-col">
+              <h2 className="text-sm font-semibold text-foreground mb-2">
+                Session ciklusok
+              </h2>
+              {sessionPhases.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  A session indulásakor generáljuk a fókusz és szünet blokkokat.
+                </p>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {sessionPhases.map((phase, idx) => {
+                    const isDone = idx < completedPhases;
+                    return (
+                      <li
+                        key={idx}
+                        className="flex items-center gap-2 rounded-md bg-background px-3 py-2 border border-border/60"
+                      >
+                        <input
+                          type="checkbox"
+                          className="shrink-0"
+                          checked={isDone}
+                          readOnly
+                        />
+                        <span
+                          className={cn(
+                            "truncate",
+                            isDone && "line-through text-muted-foreground",
+                          )}
+                        >
+                          {phase.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
         )}

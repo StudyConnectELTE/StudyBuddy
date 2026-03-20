@@ -24,6 +24,7 @@ export function PomodoroProvider({ children }) {
   const [focusMin, setFocusMin] = useState(DEFAULT_FOCUS_MIN);
   const [shortBreakMin, setShortBreakMin] = useState(DEFAULT_SHORT_BREAK_MIN);
   const [longBreakMin, setLongBreakMin] = useState(DEFAULT_LONG_BREAK_MIN);
+  const [completedPhases, setCompletedPhases] = useState(0);
   const tickRef = useRef(null);
   const stateRef = useRef({});
   const transitionRef = useRef(null);
@@ -34,6 +35,8 @@ export function PomodoroProvider({ children }) {
     mode === MODES.LONG_BREAK;
 
   const transitionOnPhaseEnd = useCallback(() => {
+    setCompletedPhases((prev) => prev + 1);
+
     const { mode: m, currentCycle: c, focusMin: f, shortBreakMin: s, longBreakMin: l } =
       stateRef.current;
     if (m === MODES.FOCUS) {
@@ -89,6 +92,7 @@ export function PomodoroProvider({ children }) {
 
   const startFocus = useCallback(() => {
     const now = Date.now();
+    setCompletedPhases(0);  
     setEndTime(now + focusMin * 60 * 1000);
     setMode(MODES.FOCUS);
     setCurrentCycle(0);
@@ -119,6 +123,7 @@ export function PomodoroProvider({ children }) {
     setPausedFromMode(null);
     setDisplaySeconds(focusMin * 60);
     setCurrentCycle(0);
+    setCompletedPhases(0); // ÚJ
   }, [focusMin]);
 
   const value = {
@@ -141,6 +146,7 @@ export function PomodoroProvider({ children }) {
     startPause,
     resume,
     reset,
+    completedPhases
   };
 
   return (
