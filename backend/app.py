@@ -13,6 +13,7 @@ from routes.groups_routes import groups_bp
 from routes.subjects_routes import subjects_bp
 from routes.profile_routes import profile_bp
 from routes.posts_routes import posts_bp
+from routes.pomodoro_routes import pomodoro_bp
 
 def create_app():
     app = Flask(__name__)
@@ -106,6 +107,7 @@ def create_app():
     app.register_blueprint(subjects_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(posts_bp)
+    app.register_blueprint(pomodoro_bp)
     #register(app)
 
     # 10. DB LÉTREHOZÁS (FEJLESZTÉSI)

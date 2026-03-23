@@ -179,6 +179,71 @@ const groupService = {
   },
 };
 
+// POMODORO (csoportos / egyéni session API)
+const pomodoroService = {
+  startSession: async (body = {}) => {
+    const token = getAuthToken();
+    const response = await api.post("/pomodoro/start", body, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  getSession: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.get(`/pomodoro/session/${sessionId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  leaveSession: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/pomodoro/session/${sessionId}/leave`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  finishSession: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/pomodoro/session/${sessionId}/finish`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  updateSessionTask: async (sessionId, taskText) => {
+    const token = getAuthToken();
+    const response = await api.patch(
+      `/pomodoro/session/${sessionId}/task`,
+      { task_text: taskText },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+};
+
 // FORUM SERVICE
 const forumService = {
   getPosts: async (groupId) => {
@@ -420,5 +485,12 @@ const subjectService = {
 
 
 
-export { authService, groupService, forumService, eventService, subjectService };
+export {
+  authService,
+  groupService,
+  forumService,
+  eventService,
+  subjectService,
+  pomodoroService,
+};
 export default authService;

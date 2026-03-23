@@ -1,8 +1,21 @@
-import { useState } from "react";
-import { Lightbulb } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Lightbulb, Copy, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { usePomodoro } from "../context/usePomodoro";
+import {
+  authService,
+  groupService,
+  pomodoroService,
+} from "../service/api";
+
+function extractApiError(err) {
+  const d = err?.response?.data;
+  if (typeof d?.error === "string") return d.error;
+  if (typeof d?.message === "string") return d.message;
+  return "Ismeretlen hiba";
+}
 
 function formatTime(seconds) {
   if (seconds == null || seconds < 0) return "25:00";
@@ -42,6 +55,13 @@ export function PomodoroPage() {
 
   const [sessionPhases, setSessionPhases] = useState([]);
 
+  const [myGroups, setMyGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [groupStartLoading, setGroupStartLoading] = useState(false);
+  const [backendSessionId, setBackendSessionId] = useState(null);
+  const [sessionSnapshot, setSessionSnapshot] = useState(null);
+
   const {
     MODES,
     CYCLES_BEFORE_LONG_BREAK,
@@ -62,6 +82,69 @@ export function PomodoroPage() {
     reset,
     completedPhases,
   } = usePomodoro();
+
+  const isLoggedIn = authService.isAuthenticated();
+
+  useEffect(() => {
+    if (!isGroupSession || !showSessionSetup || !isLoggedIn) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setGroupsLoading(true);
+        const data = await groupService.myGroups();
+        if (!cancelled) setMyGroups(data.groups || []);
+      } catch {
+        if (!cancelled) toast.error("Nem sikerült betölteni a csoportjaidat.");
+      } finally {
+        if (!cancelled) setGroupsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGroupSession, showSessionSetup, isLoggedIn]);
+
+  useEffect(() => {
+    if (!backendSessionId || showSessionSetup) {
+      setSessionSnapshot(null);
+      return;
+    }
+    const id = backendSessionId;
+    let cancelled = false;
+    const fetchSession = async () => {
+      try {
+        const s = await pomodoroService.getSession(id);
+        if (cancelled) return;
+        setSessionSnapshot(s);
+        if (s.end_time) {
+          toast.message("A csoportos session a szerveren lezárult.");
+          setBackendSessionId(null);
+          localStorage.removeItem("pomodoroGroupSessionId");
+        }
+      } catch {
+        /* poll csendben újra */
+      }
+    };
+    fetchSession();
+    const t = setInterval(fetchSession, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [backendSessionId, showSessionSetup]);
+
+  const clearGroupBackendSession = async () => {
+    const id = backendSessionId;
+    if (!id) return;
+    try {
+      await pomodoroService.leaveSession(id);
+    } catch {
+      /* reset mindenképp */
+    }
+    setBackendSessionId(null);
+    localStorage.removeItem("pomodoroGroupSessionId");
+    setSessionSnapshot(null);
+  };
 
   const totalSecForPhase =
     mode === MODES.FOCUS
@@ -115,7 +198,38 @@ export function PomodoroPage() {
     );
   };
 
-  const handleStartSession = () => {
+  const handleStartSession = async () => {
+    if (isGroupSession) {
+      if (!isLoggedIn) {
+        toast.error("Csoportos sessionhez jelentkezz be.");
+        return;
+      }
+      if (!selectedGroupId) {
+        toast.error("Válassz egy csoportot.");
+        return;
+      }
+      try {
+        setGroupStartLoading(true);
+        const taskTitles = tasks.map((t) => t.title);
+        const res = await pomodoroService.startSession({
+          group_id: Number(selectedGroupId),
+          mode: "FOCUS",
+          tasks: taskTitles,
+        });
+        setBackendSessionId(res.session_id);
+        localStorage.setItem(
+          "pomodoroGroupSessionId",
+          String(res.session_id),
+        );
+        toast.success(`Csoportos session elindult (#${res.session_id}).`);
+      } catch (err) {
+        toast.error(extractApiError(err));
+        setGroupStartLoading(false);
+        return;
+      }
+      setGroupStartLoading(false);
+    }
+
     if (mode === MODES.IDLE) {
       setSessionPhases(buildSessionPhases());
       startFocus();
@@ -133,13 +247,30 @@ export function PomodoroPage() {
     setShowResetConfirm(true);
   };
 
-  const confirmFullReset = () => {
+  const confirmFullReset = async () => {
+    if (backendSessionId) {
+      await clearGroupBackendSession();
+    }
     reset();
     setShowSessionSetup(true);
     setShowResetConfirm(false);
-    // opcionális:
-    // setTasks([]);
-    // setSessionPhases([]);
+  };
+
+  const handleLeaveGroupSession = async () => {
+    await clearGroupBackendSession();
+    toast.success("Kiléptél a csoportos sessionből.");
+    reset();
+    setShowSessionSetup(true);
+  };
+
+  const copySessionId = async () => {
+    if (!backendSessionId) return;
+    try {
+      await navigator.clipboard.writeText(String(backendSessionId));
+      toast.success("Session ID a vágólapra másolva.");
+    } catch {
+      toast.error("Másolás sikertelen.");
+    }
   };
 
   const cancelFullReset = () => {
@@ -185,6 +316,52 @@ export function PomodoroPage() {
                 Csoportos session
               </button>
             </div>
+
+            {isGroupSession && (
+              <div className="space-y-2 rounded-lg border border-border/80 bg-background/50 p-3">
+                {!isLoggedIn ? (
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Jelentkezz be, hogy csoportos sessiont indíthass.
+                  </p>
+                ) : groupsLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Csoportok betöltése…
+                  </p>
+                ) : myGroups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nincs egy csoportod sem. Csatlakozz egyhez a „Csoportjaim”
+                    nézetben.
+                  </p>
+                ) : (
+                  <>
+                    <label
+                      htmlFor="pomodoro-group-select"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      Melyik csoport?
+                    </label>
+                    <select
+                      id="pomodoro-group-select"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      value={selectedGroupId}
+                      onChange={(e) => setSelectedGroupId(e.target.value)}
+                    >
+                      <option value="">— Válassz csoportot —</option>
+                      {myGroups.map((g) => (
+                        <option key={g.id} value={String(g.id)}>
+                          {g.name} ({g.subject})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      A szerver minden csoporttagot felvesz résztvevőnek. Az óra
+                      nálad helyben indul; a többiek képernyőjét később lehet
+                      ugyanerre a sessionre kötni.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -314,14 +491,68 @@ export function PomodoroPage() {
               <Button
                 type="button"
                 onClick={handleStartSession}
+                disabled={
+                  groupStartLoading ||
+                  (isGroupSession &&
+                    (!isLoggedIn ||
+                      groupsLoading ||
+                      !selectedGroupId ||
+                      myGroups.length === 0))
+                }
                 className="min-w-[140px] rounded-xl"
               >
-                Indítás
+                {groupStartLoading ? "Indítás…" : "Indítás"}
               </Button>
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col md:flex-row gap-10 lg:gap-16 items-start">
+          <div className="flex-1 flex flex-col w-full gap-6">
+            {backendSessionId && (
+              <div className="w-full rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm shrink-0">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Users className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="font-medium text-foreground">
+                      Csoportos session #{backendSessionId}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={copySessionId}
+                    >
+                      <Copy className="h-3.5 w-3.5 mr-1" />
+                      ID másolása
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLeaveGroupSession}
+                    >
+                      Kilépés
+                    </Button>
+                  </div>
+                </div>
+                {sessionSnapshot?.participants?.length > 0 && (
+                  <ul className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {sessionSnapshot.participants.map((p) => (
+                      <li
+                        key={p.user_id}
+                        className="rounded-md bg-background/90 px-2 py-1 border border-border/60"
+                      >
+                        Felhasználó #{p.user_id}
+                        {p.left_at ? " · kilépett" : " · aktív"}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div className="flex-1 flex flex-col md:flex-row gap-10 lg:gap-16 items-start">
             {/* Bal: session feladatok panel */}
             <div className="w-full md:w-64 lg:w-72 md:self-stretch rounded-xl border border-border bg-muted/40 p-4 flex flex-col">
               <h2 className="text-sm font-semibold text-foreground mb-2">
@@ -481,6 +712,7 @@ export function PomodoroPage() {
                   })}
                 </ul>
               )}
+            </div>
             </div>
           </div>
         )}
