@@ -23,10 +23,6 @@ def register():
     
     data = request.get_json(silent=True)
 
-    print("????")
-    print("DATA:", data)
-    print(type(data))
-
     if not isinstance(data, dict):
         return jsonify({"message": "Invalid JSON body"}), 400
     
@@ -210,7 +206,6 @@ def forgot_password():
 @auth_bp.route('/change-password', methods=['PUT'])
 def change_password():
     auth_header = request.headers.get('Authorization')
-    print(f'🔍 Eljut idáig - Header: {auth_header}')
     
     if not auth_header:
         return jsonify({'error': 'Hiányzik Authorization header'}), 401
@@ -223,9 +218,7 @@ def change_password():
         if not decoded:
             return jsonify({'error': 'Érvénytelen vagy lejárt token'}), 401
         
-        # 👈 'userid' → 'id' !
-        user_id = decoded['user_id']  # VAGY decoded.get('userid')
-        print(f'🔍 User ID: {user_id}')
+        user_id = decoded['user_id']
         
         user = db.session.get(User, user_id)
         if not user:

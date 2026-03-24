@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./SideBar";
 import { MobileNav } from "./MobileNav";
 import HomePage from "./HomePage";
@@ -11,7 +11,8 @@ import LoginPage from "./LoginPage";
 import { RegisterPage } from "./RegisterPage";
 import { Toaster } from "./ui/sonner";
 import { toast } from "sonner";
-import { authService } from "../service/api";
+import { authService, pomodoroService } from "../service/api";
+import { PomodoroInviteModal } from "./PomodoroInviteModal";
 
 export function Layout() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -19,6 +20,52 @@ export function Layout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pomodoroInvite, setPomodoroInvite] = useState(null);
+  /** 401 esetén leáll (lejárt/hibás token), ne spammelje a backendet */
+  const [pomodoroInvitePollStopped, setPomodoroInvitePollStopped] =
+    useState(false);
+
+  const closePomodoroInvite = useCallback(() => setPomodoroInvite(null), []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setPomodoroInvite(null);
+      setPomodoroInvitePollStopped(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || pomodoroInvitePollStopped) return;
+    if (!localStorage.getItem("authToken")) return;
+
+    let cancelled = false;
+    const tick = async () => {
+      if (!localStorage.getItem("authToken")) return;
+      try {
+        const data = await pomodoroService.getPendingInvites();
+        if (cancelled) return;
+        const invites = data.invites || [];
+        setPomodoroInvite((prev) => {
+          if (prev) {
+            const still = invites.find((i) => i.session_id === prev.session_id);
+            return still ?? null;
+          }
+          return invites[0] ?? null;
+        });
+      } catch (err) {
+        if (err?.response?.status === 401) {
+          setPomodoroInvitePollStopped(true);
+          setPomodoroInvite(null);
+        }
+      }
+    };
+    tick();
+    const id = setInterval(tick, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [isAuthenticated, pomodoroInvitePollStopped]);
 
   // App indításkor ellenőrizzük a localStorage-t
   useEffect(() => {
@@ -54,6 +101,7 @@ export function Layout() {
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
+      setPomodoroInvitePollStopped(false);
       
       toast.success("Sikeres bejelentkezés!", {
         description: "Üdvözlünk újra!"
@@ -84,6 +132,7 @@ export function Layout() {
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
+      setPomodoroInvitePollStopped(false);
       
       toast.success("Sikeres regisztráció!", {
         description: "Bejelentkeztél!"
@@ -144,7 +193,9 @@ export function Layout() {
       case "mygroups":
         return <MyGroupsPage />;
       case "pomodoro":
-        return <PomodoroPage />;
+        return (
+          <PomodoroPage blockGroupStartDueToInvite={!!pomodoroInvite} />
+        );
       case "profile":
         return <ProfileSettingsPage userData={userData} />;
       default:
@@ -177,6 +228,13 @@ export function Layout() {
           </main>
         </div>
       </PomodoroProvider>
+      {pomodoroInvite && (
+        <PomodoroInviteModal
+          invite={pomodoroInvite}
+          onClose={closePomodoroInvite}
+          onNavigatePomodoro={() => setCurrentPage("pomodoro")}
+        />
+      )}
       <Toaster /> {/* ← EZ KELL! */}
     </>
   );

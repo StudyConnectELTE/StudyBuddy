@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Lightbulb, Copy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -8,14 +8,8 @@ import {
   authService,
   groupService,
   pomodoroService,
+  getApiErrorMessage,
 } from "../service/api";
-
-function extractApiError(err) {
-  const d = err?.response?.data;
-  if (typeof d?.error === "string") return d.error;
-  if (typeof d?.message === "string") return d.message;
-  return "Ismeretlen hiba";
-}
 
 function formatTime(seconds) {
   if (seconds == null || seconds < 0) return "25:00";
@@ -24,7 +18,8 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function getModeLabel(mode, MODES) {
+function getModeLabel(mode, MODES, waitingGroupSync) {
+  if (waitingGroupSync) return "Együtt indulás";
   switch (mode) {
     case MODES.FOCUS:
       return "Fókusz";
@@ -39,7 +34,7 @@ function getModeLabel(mode, MODES) {
   }
 }
 
-export function PomodoroPage() {
+export function PomodoroPage({ blockGroupStartDueToInvite = false }) {
   const [isGroupSession, setIsGroupSession] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
@@ -61,6 +56,10 @@ export function PomodoroPage() {
   const [groupStartLoading, setGroupStartLoading] = useState(false);
   const [backendSessionId, setBackendSessionId] = useState(null);
   const [sessionSnapshot, setSessionSnapshot] = useState(null);
+  /** Csoportos: a fókusz időzítő csak ettől az időbélyegtől (invite_deadline, szerver UTC) */
+  const [groupFocusStartsAtMs, setGroupFocusStartsAtMs] = useState(null);
+  const [groupSyncNow, setGroupSyncNow] = useState(Date.now());
+  const groupSyncStartFiredRef = useRef(false);
 
   const {
     MODES,
@@ -84,6 +83,92 @@ export function PomodoroPage() {
   } = usePomodoro();
 
   const isLoggedIn = authService.isAuthenticated();
+
+  const bootstrapAcceptedSession = useCallback(
+    async (sessionId) => {
+      const sid = Number(sessionId);
+      if (!Number.isFinite(sid)) return;
+      setBackendSessionId(sid);
+      localStorage.setItem("pomodoroGroupSessionId", String(sid));
+      try {
+        const s = await pomodoroService.getSession(sid);
+        const deadlineIso = s.invite_deadline;
+        if (deadlineIso) {
+          const ms = Date.parse(deadlineIso);
+          if (Number.isFinite(ms) && Date.now() < ms) {
+            setGroupFocusStartsAtMs(ms);
+            setGroupSyncNow(Date.now());
+            setShowSessionSetup(false);
+            return;
+          }
+        }
+        const phases = [];
+        for (let i = 1; i <= focusCount; i++) {
+          phases.push({ label: `${i}. Fókusz` });
+          if (i < focusCount) {
+            phases.push({ label: `${i}. Rövid szünet` });
+          }
+        }
+        phases.push({ label: "Hosszú szünet" });
+        setSessionPhases(phases);
+        setShowSessionSetup(false);
+        startFocus();
+      } catch (e) {
+        const code = e?.response?.data?.code;
+        localStorage.removeItem("pomodoroGroupSessionId");
+        setBackendSessionId(null);
+        if (code === "INVITE_PENDING") return;
+      }
+    },
+    [focusCount, startFocus],
+  );
+
+  useEffect(() => {
+    const onAccepted = (e) => {
+      const sid = e.detail?.sessionId;
+      if (sid == null) return;
+      void bootstrapAcceptedSession(sid);
+    };
+    window.addEventListener("pomodoro-session-accepted", onAccepted);
+    return () => window.removeEventListener("pomodoro-session-accepted", onAccepted);
+  }, [bootstrapAcceptedSession]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("pomodoroGroupSessionId");
+    if (!raw) return;
+    void bootstrapAcceptedSession(Number(raw));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- induláskor egyszer: LS-ből visszaállítás
+  }, []);
+
+  useEffect(() => {
+    groupSyncStartFiredRef.current = false;
+  }, [groupFocusStartsAtMs]);
+
+  useEffect(() => {
+    if (groupFocusStartsAtMs == null) return;
+    const id = setInterval(() => {
+      const now = Date.now();
+      setGroupSyncNow(now);
+      if (
+        now >= groupFocusStartsAtMs &&
+        !groupSyncStartFiredRef.current
+      ) {
+        groupSyncStartFiredRef.current = true;
+        const phases = [];
+        for (let i = 1; i <= focusCount; i++) {
+          phases.push({ label: `${i}. Fókusz` });
+          if (i < focusCount) {
+            phases.push({ label: `${i}. Rövid szünet` });
+          }
+        }
+        phases.push({ label: "Hosszú szünet" });
+        setSessionPhases(phases);
+        startFocus();
+        setGroupFocusStartsAtMs(null);
+      }
+    }, 250);
+    return () => clearInterval(id);
+  }, [groupFocusStartsAtMs, focusCount, startFocus]);
 
   useEffect(() => {
     if (!isGroupSession || !showSessionSetup || !isLoggedIn) return;
@@ -144,7 +229,22 @@ export function PomodoroPage() {
     setBackendSessionId(null);
     localStorage.removeItem("pomodoroGroupSessionId");
     setSessionSnapshot(null);
+    setGroupFocusStartsAtMs(null);
   };
+
+  const isWaitingGroupSync =
+    groupFocusStartsAtMs != null && groupSyncNow < groupFocusStartsAtMs;
+  const secondsUntilGroupFocus =
+    groupFocusStartsAtMs != null
+      ? Math.max(0, Math.ceil((groupFocusStartsAtMs - groupSyncNow) / 1000))
+      : 0;
+
+  /** Szinkron csoportos session (backend): csak Kilépés — nincs szünet / reset / középső Indítás */
+  const isLockedGroupSession = Boolean(backendSessionId);
+
+  useEffect(() => {
+    if (backendSessionId) setShowLegacySettings(false);
+  }, [backendSessionId]);
 
   const totalSecForPhase =
     mode === MODES.FOCUS
@@ -155,15 +255,19 @@ export function PomodoroPage() {
           ? longBreakMin * 60
           : focusMin * 60;
 
-  const displaySecondsToShow =
-    mode === MODES.PAUSED
+  const displaySecondsToShow = isWaitingGroupSync
+    ? secondsUntilGroupFocus
+    : mode === MODES.PAUSED
       ? pausedRemainingSec
       : mode === MODES.IDLE
         ? focusMin * 60
         : displaySeconds;
 
-  const progress =
-    totalSecForPhase > 0 ? 1 - displaySecondsToShow / totalSecForPhase : 1;
+  const progress = isWaitingGroupSync
+    ? Math.min(1, 1 - secondsUntilGroupFocus / 60)
+    : totalSecForPhase > 0
+      ? 1 - displaySecondsToShow / totalSecForPhase
+      : 1;
 
   const buildSessionPhases = () => {
     const phases = [];
@@ -191,6 +295,7 @@ export function PomodoroPage() {
   };
 
   const toggleTaskDone = (idx) => {
+    if (isLockedGroupSession) return;
     setTasks((prev) =>
       prev.map((task, i) =>
         i === idx ? { ...task, done: !task.done } : task,
@@ -221,13 +326,25 @@ export function PomodoroPage() {
           "pomodoroGroupSessionId",
           String(res.session_id),
         );
-        toast.success(`Csoportos session elindult (#${res.session_id}).`);
+        const dl = res.invite_deadline ? Date.parse(res.invite_deadline) : NaN;
+        if (Number.isFinite(dl) && Date.now() < dl) {
+          setGroupFocusStartsAtMs(dl);
+          setGroupSyncNow(Date.now());
+        } else {
+          setSessionPhases(buildSessionPhases());
+          startFocus();
+        }
+        toast.success(
+          `Csoportos session (#${res.session_id}) — a fókusz mindenkinél egyszerre indul, amikor lejár a meghívó.`,
+        );
       } catch (err) {
-        toast.error(extractApiError(err));
+        toast.error(getApiErrorMessage(err));
         setGroupStartLoading(false);
         return;
       }
       setGroupStartLoading(false);
+      setShowSessionSetup(false);
+      return;
     }
 
     if (mode === MODES.IDLE) {
@@ -240,17 +357,21 @@ export function PomodoroPage() {
   };
 
   const handlePause = () => {
+    if (isLockedGroupSession) return;
     if (isActive) startPause();
   };
 
   const handleResetClick = () => {
+    if (isLockedGroupSession) return;
     setShowResetConfirm(true);
   };
 
   const confirmFullReset = async () => {
-    if (backendSessionId) {
-      await clearGroupBackendSession();
+    if (isLockedGroupSession) {
+      setShowResetConfirm(false);
+      return;
     }
+    setGroupFocusStartsAtMs(null);
     reset();
     setShowSessionSetup(true);
     setShowResetConfirm(false);
@@ -354,10 +475,16 @@ export function PomodoroPage() {
                       ))}
                     </select>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      A szerver minden csoporttagot felvesz résztvevőnek. Az óra
-                      nálad helyben indul; a többiek képernyőjét később lehet
-                      ugyanerre a sessionre kötni.
+                      A fókusz időzítő a meghívó lejártakor indul mindenkinél egyszerre
+                      (host és elfogadók). Ne indíts új csoportos sessiont, amíg függő
+                      meghívód van — előbb válaszolj a felugró ablakban.
                     </p>
+                    {blockGroupStartDueToInvite && (
+                      <p className="text-sm text-amber-800 dark:text-amber-200 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 mt-2">
+                        Nyitott Pomodoro meghívó — fogadd el vagy utasítsd el a felugró
+                        ablakban, különben nem indíthatsz új csoportos sessiont.
+                      </p>
+                    )}
                   </>
                 )}
               </div>
@@ -493,6 +620,7 @@ export function PomodoroPage() {
                 onClick={handleStartSession}
                 disabled={
                   groupStartLoading ||
+                  (isGroupSession && blockGroupStartDueToInvite) ||
                   (isGroupSession &&
                     (!isLoggedIn ||
                       groupsLoading ||
@@ -573,6 +701,7 @@ export function PomodoroPage() {
                         type="checkbox"
                         className="shrink-0"
                         checked={t.done}
+                        disabled={isLockedGroupSession}
                         onChange={() => toggleTaskDone(idx)}
                       />
                       <span
@@ -635,8 +764,10 @@ export function PomodoroPage() {
                     {formatTime(displaySecondsToShow)}
                   </span>
                   <span className="text-sm text-muted-foreground mt-2 font-medium">
-                    {getModeLabel(mode, MODES)}
-                    {mode === MODES.FOCUS && currentCycle > 0 && (
+                    {getModeLabel(mode, MODES, isWaitingGroupSync)}
+                    {!isWaitingGroupSync &&
+                      mode === MODES.FOCUS &&
+                      currentCycle > 0 && (
                       <span className="ml-1">
                         ({currentCycle + 1}. / {CYCLES_BEFORE_LONG_BREAK})
                       </span>
@@ -646,7 +777,9 @@ export function PomodoroPage() {
               </div>
 
               <div className="flex justify-center gap-3 mb-4 w-full flex-wrap">
-                {(mode === MODES.IDLE || mode === MODES.PAUSED) && (
+                {!isLockedGroupSession &&
+                  (mode === MODES.IDLE || mode === MODES.PAUSED) &&
+                  !isWaitingGroupSync && (
                   <Button
                     onClick={handleStartSession}
                     className="min-w-[120px] rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
@@ -654,7 +787,7 @@ export function PomodoroPage() {
                     {mode === MODES.IDLE ? "Indítás" : "Folytatás"}
                   </Button>
                 )}
-                {isActive && (
+                {!isLockedGroupSession && isActive && (
                   <Button
                     onClick={handlePause}
                     variant="outline"
@@ -663,7 +796,8 @@ export function PomodoroPage() {
                     Szüneteltetés
                   </Button>
                 )}
-                {(isActive || mode === MODES.PAUSED) && (
+                {!isLockedGroupSession &&
+                  (isActive || mode === MODES.PAUSED) && (
                   <Button
                     onClick={handleResetClick}
                     variant="outline"
@@ -673,6 +807,13 @@ export function PomodoroPage() {
                   </Button>
                 )}
               </div>
+              {isLockedGroupSession && (
+                <p className="text-xs text-muted-foreground text-center max-w-md mx-auto px-2 mb-2 leading-relaxed">
+                  Csoportos session: a timert nem lehet megállítani vagy visszaállítani. A részvételedet csak a fenti{" "}
+                  <span className="font-medium text-foreground">Kilépés</span>{" "}
+                  gombbal zárhatod be.
+                </p>
+              )}
             </div>
 
             {/* Jobb: session fázisok listája */}
@@ -721,15 +862,26 @@ export function PomodoroPage() {
           <button
             type="button"
             onClick={() => setShowLegacySettings((s) => !s)}
-            className="text-sm text-muted-foreground hover:text-foreground underline"
+            disabled={isLockedGroupSession}
+            className={cn(
+              "text-sm underline",
+              isLockedGroupSession
+                ? "text-muted-foreground/50 cursor-not-allowed"
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
             {showLegacySettings
               ? "Beállítások elrejtése"
               : "Időtartamok (részletes beállítás)"}
           </button>
+          {isLockedGroupSession && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Csoportos session alatt az időtartamok nem módosíthatók.
+            </p>
+          )}
         </div>
 
-        {showLegacySettings && (
+        {showLegacySettings && !isLockedGroupSession && (
           <div className="w-full max-w-sm mx-auto mb-6 p-4 rounded-xl bg-muted/50 space-y-3">
             <div className="grid grid-cols-2 gap-2 items-center text-sm">
               <label className="text-muted-foreground">Fókusz (perc)</label>

@@ -1,5 +1,5 @@
 # app.py - TELJES JAVÍTOTT VÁLTOZAT (2026.02.06)
-from flask import Flask, app, send_from_directory, render_template, jsonify, current_app
+from flask import Flask, app, send_from_directory, render_template, jsonify
 from flask_mail import Mail
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
@@ -14,6 +14,7 @@ from routes.subjects_routes import subjects_bp
 from routes.profile_routes import profile_bp
 from routes.posts_routes import posts_bp
 from routes.pomodoro_routes import pomodoro_bp
+
 
 def create_app():
     app = Flask(__name__)
