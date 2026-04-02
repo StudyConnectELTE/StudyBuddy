@@ -6,10 +6,14 @@ from services.auth_service import create_jwt_token, generate_temp_password,  ver
 from services.validators import validate_secondary_email
 from services.email_service import send_registration_email
 from config import Config
+from saml_utils import prepare_flask_request, init_saml_auth
+import urllib.parse
 import re
 import os
 import requests
+from onelogin.saml2.settings import OneLogin_Saml2_Settings
 
+FRONTEND_URL = "http://localhost:5173"
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -270,3 +274,84 @@ def change_password():
     except Exception as e:
         print(f'Jelszóváltoztatás hiba: {e}')
         return jsonify({'error': 'Szerver hiba történt'}), 500
+
+# ============================
+# 🔵 SAML LOGIN (ELTE IIG)
+# ============================
+
+@auth_bp.route("/saml/login")
+def saml_login():
+    req = prepare_flask_request(request)
+    auth = init_saml_auth(req)
+    # Redirect az ELTE IdP-re
+    return redirect(auth.login())
+
+
+# ============================
+# 🔵 SAML ACS (Assertion Consumer Service)
+# ============================
+
+@auth_bp.route("/saml/acs", methods=["POST"])
+def saml_acs():
+    req = prepare_flask_request(request)
+    auth = init_saml_auth(req)
+    auth.process_response()
+
+    errors = auth.get_errors()
+    if errors:
+        print("SAML errors:", errors)
+        return jsonify({"error": "SAML hiba", "details": errors}), 400
+
+    if not auth.is_authenticated():
+        return jsonify({"error": "Sikertelen SAML autentikáció"}), 401
+
+    attrs = auth.get_attributes()
+
+    # ELTE attribútumok (ezeket majd pontosítjuk az IIG metadata alapján)
+    email = attrs.get("mail", [None])[0]
+    name = attrs.get("displayName", [None])[0]
+    neptun = attrs.get("uid", [None])[0]
+
+    if not email:
+        return jsonify({"error": "Hiányzó email attribútum"}), 400
+
+    # Ha nincs user, létrehozzuk
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        user = User(
+            email=email,
+            name=name or "",
+            neptun_code=neptun or "",
+            major=None,
+            hobbies="",
+            secondary_email=None,
+            current_semester=None
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    token = create_jwt_token(user.id)
+
+    # Frontendre redirect tokennel
+    #FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    query = urllib.parse.urlencode({"token": token})
+    return redirect(f"{FRONTEND_URL}/sso?{query}")
+
+
+# ============================
+# 🔵 SAML METADATA (ELTE-nek kell)
+# ============================
+
+@auth_bp.route("/saml/metadata")
+def saml_metadata():
+    saml_path = os.path.join(os.path.dirname(__file__), '')
+    settings = OneLogin_Saml2_Settings(
+        settings_file=os.path.join(saml_path, 'saml_settings.json'),
+        custom_base_path=saml_path
+    )
+    metadata = settings.get_sp_metadata()
+    errors = settings.validate_metadata(metadata)
+    if errors:
+        return jsonify({"errors": errors}), 500
+
+    return metadata, 200, {"Content-Type": "text/xml"}

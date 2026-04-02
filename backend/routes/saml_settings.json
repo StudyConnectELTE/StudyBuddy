@@ -1,0 +1,29 @@
+{
+  "strict": true,
+  "debug": true,
+  "sp": {
+    "entityId": "http://localhost:5000/saml/metadata",
+    "assertionConsumerService": {
+      "url": "http://localhost:5000/saml/acs",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+    },
+    "singleLogoutService": {
+      "url": "http://localhost:5000/saml/sls",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    },
+    "x509cert": "certs/sp.crt",
+    "privateKey": "certs/sp.key"
+  },
+  "idp": {
+    "entityId": "https://idp.elte.hu/idp/shibboleth",
+    "singleSignOnService": {
+      "url": "https://idp.elte.hu/idp/profile/SAML2/Redirect/SSO",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    },
+    "singleLogoutService": {
+      "url": "https://idp.elte.hu/idp/profile/SAML2/Redirect/SLO",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    },
+    "x509cert": "IDE_JÖN_AZ_ELTE_IDP_CERT"
+  }
+}
