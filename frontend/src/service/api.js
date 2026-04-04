@@ -14,17 +14,29 @@ const api = axios.create({
 //HELYBEN DEFINIÁLT TOKEN HELPER
 const getAuthToken = () => localStorage.getItem("authToken");
 
+/** Axios / backend hiba szöveg toasthoz (nem HTML, nem „Ismeretlen hiba” mindenre) */
+export function getApiErrorMessage(err) {
+  const status = err?.response?.status;
+  const d = err?.response?.data;
+  if (typeof d === "string") {
+    const stripped = d.replace(/<[^>]*>/g, "").trim();
+    return stripped.slice(0, 400) || `Szerverhiba (${status || "?"})`;
+  }
+  if (d && typeof d === "object") {
+    if (typeof d.error === "string") return d.error;
+    if (typeof d.message === "string") return d.message;
+  }
+  if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+    return "Nem érhető el a backend (CORS / rossz URL / a szerver nem fut). Ellenőrizd a VITE_API_URL-t és a Docker konténert.";
+  }
+  if (status) return `Szerverhiba (${status}).`;
+  return err?.message || "Ismeretlen hiba";
+}
+
 const authService = {
-  register: async (email,name, major, hobbies, neptunCode, semester) => {
+  register: async (data) => {
     try {
-      const response = await api.post("/register", {
-        email,
-        name,
-        major,
-        hobbies,
-        neptunCode,
-        semester
-      });
+      const response = await api.post("/register", data);
 
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);
@@ -182,6 +194,109 @@ const groupService = {
         Authorization: `Bearer ${token}`,
       },
     });
+    return response.data;
+  },
+};
+
+// POMODORO (csoportos / egyéni session API)
+const pomodoroService = {
+  startSession: async (body = {}) => {
+    const token = getAuthToken();
+    const response = await api.post("/pomodoro/start", body, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  getSession: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.get(`/pomodoro/session/${sessionId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  leaveSession: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/pomodoro/session/${sessionId}/leave`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  finishSession: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/pomodoro/session/${sessionId}/finish`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  updateSessionTask: async (sessionId, taskText) => {
+    const token = getAuthToken();
+    const response = await api.patch(
+      `/pomodoro/session/${sessionId}/task`,
+      { task_text: taskText },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  getPendingInvites: async () => {
+    const token = getAuthToken();
+    const response = await api.get("/pomodoro/pending-invites", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  acceptInvite: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/pomodoro/session/${sessionId}/invite/accept`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  declineInvite: async (sessionId) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/pomodoro/session/${sessionId}/invite/decline`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data;
   },
 };
@@ -427,5 +542,12 @@ const subjectService = {
 
 
 
-export { authService, groupService, forumService, eventService, subjectService };
+export {
+  authService,
+  groupService,
+  forumService,
+  eventService,
+  subjectService,
+  pomodoroService,
+};
 export default authService;

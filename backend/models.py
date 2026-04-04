@@ -200,3 +200,70 @@ class CommentAttachment(db.Model):
 
     def __repr__(self):
         return f"<CommentAttachment {self.filename}>"
+
+    
+class UserPomodoroSettings(db.Model):
+    __tablename__ = "user_pomodoro_settings"
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True, primary_key=True)
+
+    focus_minutes = db.Column(db.Integer, default=25, nullable = False)  # perc
+    short_break_minutes = db.Column(db.Integer, default=5, nullable = False)  # perc
+    long_break_minutes = db.Column(db.Integer, default=15, nullable = False)  # perc
+    cycles_before_long_break = db.Column(db.Integer, default=4, nullable = False)
+
+    auto_start_breaks = db.Column(db.Boolean, default=False, nullable=False)
+    auto_start_focus = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<PomodoroSettings User:{self.user_id}>"
+    
+class PomodoroSession(db.Model):
+    __tablename__ = "pomodoro_sessions"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    mode = db.Column(
+        db.Enum("FOCUS", "SHORT_BREAK", "LONG_BREAK", name="pomodoro_mode"),
+        nullable=False,
+    )
+
+    start_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=True)
+
+    cycle_count = db.Column(db.Integer, default=0, nullable=False)
+    host_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("study_groups.id"), nullable=True, index=True)
+    # Csoportos meghívó: eddig lehet elfogadni (UTC). Egyéni sessionnél NULL.
+    invite_deadline = db.Column(db.DateTime, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    host_user = db.relationship("User", backref="hosted_pomodoro_sessions")
+
+    def __repr__(self):
+        return (
+            f"<PomodoroSession id={self.id} "
+            f"mode={self.mode} host_user_id={self.host_user_id}>"
+        )
+
+class PomodoroSessionParticipant(db.Model):
+    __tablename__ = "pomodoro_session_participants"
+
+    session_id = db.Column(db.Integer, db.ForeignKey("pomodoro_sessions.id"), nullable=False, index=True, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True, primary_key=True)
+
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    left_at = db.Column(db.DateTime, nullable=True)
+
+    task_text = db.Column(db.String(255), nullable=True)
+    # accepted = benne van; pending = meghívó; declined / expired = nem él
+    invite_status = db.Column(db.String(20), nullable=False, default="accepted")
+
+    session = db.relationship("PomodoroSession", backref="participants")
+    user = db.relationship("User", backref="pomodoro_participations")
+
+
+    def __repr__(self):
+        return f"<PomodoroSessionParticipant Session:{self.session_id} User:{self.user_id}>"
+    

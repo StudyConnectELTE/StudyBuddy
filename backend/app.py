@@ -1,5 +1,5 @@
 # app.py - TELJES JAVÍTOTT VÁLTOZAT (2026.02.06)
-from flask import Flask, send_from_directory, render_template, jsonify, current_app
+from flask import Flask, app, send_from_directory, render_template, jsonify
 from flask_mail import Mail
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
@@ -7,7 +7,14 @@ from flask_migrate import Migrate
 import os  # ← FONTOS: LEGFELÜL!
 from config import Config
 from models import db
-from routes import register_routes
+#from routes.auth_routes import auth_bp
+from routes.auth_routes import auth_bp
+from routes.groups_routes import groups_bp
+from routes.subjects_routes import subjects_bp
+from routes.profile_routes import profile_bp
+from routes.posts_routes import posts_bp
+from routes.pomodoro_routes import pomodoro_bp
+
 
 def create_app():
     app = Flask(__name__)
@@ -95,7 +102,14 @@ def create_app():
         return send_from_directory(UPLOAD_FOLDER, filepath)
 
     # 9. MAIN ROUTES REGISZTRÁLÁSA
-    register_routes(app)
+    #app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(groups_bp)
+    app.register_blueprint(subjects_bp)
+    app.register_blueprint(profile_bp)
+    app.register_blueprint(posts_bp)
+    app.register_blueprint(pomodoro_bp)
+    #register(app)
 
     # 10. DB LÉTREHOZÁS (FEJLESZTÉSI)
     with app.app_context():
@@ -103,6 +117,7 @@ def create_app():
 
     return app
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
+    
