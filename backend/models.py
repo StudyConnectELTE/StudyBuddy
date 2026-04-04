@@ -234,6 +234,9 @@ class PomodoroSession(db.Model):
 
     cycle_count = db.Column(db.Integer, default=0, nullable=False)
     host_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("study_groups.id"), nullable=True, index=True)
+    # Csoportos meghívó: eddig lehet elfogadni (UTC). Egyéni sessionnél NULL.
+    invite_deadline = db.Column(db.DateTime, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     host_user = db.relationship("User", backref="hosted_pomodoro_sessions")
@@ -254,6 +257,8 @@ class PomodoroSessionParticipant(db.Model):
     left_at = db.Column(db.DateTime, nullable=True)
 
     task_text = db.Column(db.String(255), nullable=True)
+    # accepted = benne van; pending = meghívó; declined / expired = nem él
+    invite_status = db.Column(db.String(20), nullable=False, default="accepted")
 
     session = db.relationship("PomodoroSession", backref="participants")
     user = db.relationship("User", backref="pomodoro_participations")
