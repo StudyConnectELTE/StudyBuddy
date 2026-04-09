@@ -114,32 +114,39 @@ export function Layout() {
       setLoading(false);
     }
   };
+
+  const getErrorMessage = (error) => {
+    if (!error) return "Ismeretlen hiba";
+  
+    // Axios-szerű hiba
+    const data = error.response?.data;
+    if (typeof data?.message === "string") return data.message;
+    if (typeof data?.error === "string") return data.error;
+  
+    // Simán dobott hiba
+    if (typeof error.message === "string") return error.message;
+  
+    return "Regisztráció sikertelen, próbáld újra.";
+  };
   
 
   const handleRegister = async (data) => {
     try {
       setLoading(true);
-      await authService.register(
-        data.email,
-        data.name,
-        data.major,
-        data.hobbies,
-        data.neptunCode,
-        data.semester
-      );
-      
-      // Regisztráció után automatikus bejelentkezés
+      await authService.register(data);
+  
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
       setPomodoroInvitePollStopped(false);
-      
+  
       toast.success("Sikeres regisztráció!", {
-        description: "Bejelentkeztél!"
+        description: "Bejelentkeztél!",
       });
     } catch (error) {
+      console.error("Regisztráció hiba:", error);
       toast.error("Regisztráció sikertelen", {
-        description: error || "Próbáld újra"
+        description: getErrorMessage(error),
       });
     } finally {
       setLoading(false);
