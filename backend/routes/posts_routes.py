@@ -4,6 +4,7 @@ from models import db
 from models import Group, GroupMember, Post, Comment, Event, PostView, PostAttachment, CommentAttachment
 from services.auth_service import verify_jwt_token
 from services.file_service import save_post_files
+from services.gamification_service import award_xp
 
 posts_bp = Blueprint("posts", __name__)
 
@@ -84,6 +85,9 @@ def create_post(group_id):
         db.session.add(att)
 
     db.session.commit()
+
+    # Award XP for creating a post
+    award_xp(user_id, 'create_post')
 
     return jsonify({
     "message": "Poszt létrehozva",
@@ -333,6 +337,9 @@ def create_comment(post_id):
             return jsonify({"error": f"Fájl feltöltési hiba: {str(e)}"}), 500
 
     db.session.commit()
+
+    # Award XP for creating a comment
+    award_xp(user_id, 'create_comment')
 
     comment_response = {
         "id": new_comment.id,

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from models import db
 from models import User, Group, GroupMember
 from services.auth_service import verify_jwt_token
+from services.gamification_service import award_xp
 
 groups_bp = Blueprint("groups", __name__)
 
@@ -229,6 +230,9 @@ def join_group():
     new_member = GroupMember(user_id=user_id, group_id=group_id)
     db.session.add(new_member)
     db.session.commit()
+
+    # Award XP for joining a group
+    award_xp(user_id, 'join_group')
 
     return jsonify({"message": "Sikeresen csatlakoztál a csoporthoz!"}), 201
 

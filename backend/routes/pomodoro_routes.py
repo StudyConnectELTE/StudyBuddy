@@ -9,6 +9,7 @@ from models import (
     Group,
 )
 from services.auth_service import verify_jwt_token
+from services.gamification_service import award_xp
 
 pomodoro_bp = Blueprint("pomodoro", __name__)
 
@@ -270,6 +271,9 @@ def start_pomodoro():
         db.session.add(participant)
 
     db.session.commit()
+
+    # Award XP for starting a pomodoro session
+    award_xp(user_id, 'start_pomodoro')
 
     return jsonify(
         {

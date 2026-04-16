@@ -23,5 +23,7 @@ def profile():
         "major": user.major,
         "name": user.name,
         "hobbies": user.hobbies,
-        "secondary_email": user.secondary_email
+        "secondary_email": user.secondary_email,
+        "xp": user.xp,
+        "level": user.level
     })
