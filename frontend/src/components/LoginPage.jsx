@@ -191,6 +191,24 @@ function LoginPage({ onLogin, onSwitchToRegister }) {
           >
             {isLoading ? "Bejelentkezés..." : "Bejelentkezés"}
           </Button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">vagy</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => window.location.replace('http://localhost:5000/saml/login')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={isLoading}
+          >
+            🎓 Bejelentkezés ELTE fiókkal
+          </Button>
         </form>
 
         <div className="mt-6 text-center">

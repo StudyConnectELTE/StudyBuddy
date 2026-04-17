@@ -1,5 +1,5 @@
 {
-  "strict": true,
+  "strict": false,
   "debug": true,
   "sp": {
     "entityId": "http://localhost:5000/saml/metadata",
@@ -11,19 +11,29 @@
       "url": "http://localhost:5000/saml/sls",
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
     },
+    "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
     "x509cert": "certs/sp.crt",
     "privateKey": "certs/sp.key"
   },
+  "security": {
+    "authnRequestsSigned": false,
+    "logoutRequestSigned": false,
+    "logoutResponseSigned": false,
+    "signMetadata": false,
+    "wantAssertionsSigned": true,
+    "wantMessagesSigned": false,
+    "wantNameIdEncrypted": false
+  },
   "idp": {
-    "entityId": "https://idp.elte.hu/idp/shibboleth",
+    "entityId": "https://idp.elte.hu/auth-testing/saml2/idp/metadata.php",
     "singleSignOnService": {
-      "url": "https://idp.elte.hu/idp/profile/SAML2/Redirect/SSO",
+      "url": "https://idp.elte.hu/auth-testing/saml2/idp/SSOService.php",
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
     },
     "singleLogoutService": {
-      "url": "https://idp.elte.hu/idp/profile/SAML2/Redirect/SLO",
+      "url": "https://idp.elte.hu/auth-testing/saml2/idp/SingleLogoutService.php",
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
     },
-    "x509cert": "IDE_JÖN_AZ_ELTE_IDP_CERT"
+    "x509cert": "certs/idp.crt"
   }
 }

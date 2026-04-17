@@ -8,15 +8,17 @@ import {ProfileSettingsPage} from "./components/ProfileSettingsPage";
 import {SearchPage} from "./components/SearchPage";
 import MyGroupsPage from "./components/MyGroupsPage";
 import ForumPage from "./components/ForumPage";
-
+import { SSOCallback } from "./components/SSOCallback";
 
 
 
 export default function App() {
   return (
     <Router>  {/* ← EZ KELL! */}
-      <Layout />
-      
+      <Routes>
+        <Route path="/sso" element={<SSOCallback />} />
+        <Route path="/*" element={<Layout />} />
+      </Routes>
     </Router>
   );
 }

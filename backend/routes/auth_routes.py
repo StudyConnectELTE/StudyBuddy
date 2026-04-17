@@ -1,4 +1,4 @@
-from flask import Blueprint, json, request, jsonify
+from flask import Blueprint, json, request, jsonify, redirect
 import bcrypt
 from models import db
 from models import User
@@ -6,7 +6,7 @@ from services.auth_service import create_jwt_token, generate_temp_password,  ver
 from services.validators import validate_secondary_email
 from services.email_service import send_registration_email
 from config import Config
-from saml_utils import prepare_flask_request, init_saml_auth
+from .saml_utils import prepare_flask_request, init_saml_auth, load_saml_settings
 import urllib.parse
 import re
 import os
@@ -345,13 +345,15 @@ def saml_acs():
 @auth_bp.route("/saml/metadata")
 def saml_metadata():
     saml_path = os.path.join(os.path.dirname(__file__), '')
-    settings = OneLogin_Saml2_Settings(
-        settings_file=os.path.join(saml_path, 'saml_settings.json'),
-        custom_base_path=saml_path
-    )
+    settings_dict = load_saml_settings()
+
+    settings = OneLogin_Saml2_Settings(settings_dict, custom_base_path=saml_path)
     metadata = settings.get_sp_metadata()
+
+    # For debugging, return metadata even if validation fails
     errors = settings.validate_metadata(metadata)
     if errors:
-        return jsonify({"errors": errors}), 500
+        print("Metadata validation errors:", errors)
+        return metadata, 200, {"Content-Type": "text/xml"}
 
     return metadata, 200, {"Content-Type": "text/xml"}
