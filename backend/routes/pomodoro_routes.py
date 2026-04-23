@@ -303,7 +303,7 @@ def start_pomodoro():
     # 4) PomodoroSession létrehozása
     invite_deadline = None
     if group_id:
-        invite_deadline = datetime.now(timezone.utc) + timedelta(seconds=60)
+        invite_deadline = datetime.utcnow() + timedelta(seconds=60)
 
     session = PomodoroSession(
         mode=mode,
@@ -349,7 +349,7 @@ def start_pomodoro():
                             "group_name": grp.name if grp else None,
                             "host_user_id": user_id,
                             "seconds_left": 60,
-                            "invite_deadline": invite_deadline.isoformat(),
+                            "invite_deadline": invite_deadline.isoformat() + "Z",
                         },
                         room=f"user_{uid}",
                         namespace="/pomodoro",
@@ -361,7 +361,7 @@ def start_pomodoro():
         "mode": session.mode,
         "participants": participants,
         "tasks": tasks,
-        "invite_deadline": invite_deadline.isoformat() if invite_deadline else None,
+        "invite_deadline": (invite_deadline.isoformat() + "Z") if invite_deadline else None,
         "settings_used": {
             "focus": settings.focus_minutes,
             "short_break": settings.short_break_minutes,
@@ -421,7 +421,7 @@ def get_pomodoro_session(session_id):
         "host_user_id": session.host_user_id,
         "participants": participants_data,
         "updated_at": session.updated_at.isoformat(),
-        "invite_deadline": session.invite_deadline.isoformat() if session.invite_deadline else None,
+        "invite_deadline": (session.invite_deadline.isoformat() + "Z") if session.invite_deadline else None,
     }
 
     return jsonify(response), 200
@@ -590,11 +590,12 @@ def get_pending_invites():
     if err:
         return err, code
 
+    now = datetime.utcnow()
     pending = PomodoroSessionParticipant.query.filter_by(
         user_id=user_id, invite_status="pending"
     ).join(PomodoroSession).filter(
         PomodoroSession.end_time == None,
-        PomodoroSession.invite_deadline > datetime.now(timezone.utc)
+        PomodoroSession.invite_deadline > now
     ).all()
 
     invites = []
@@ -604,7 +605,7 @@ def get_pending_invites():
             "session_id": p.session_id,
             "group_name": grp.name if grp else None,
             "seconds_left": max(0, int(
-                (p.session.invite_deadline - datetime.now(timezone.utc)).total_seconds()
+                (p.session.invite_deadline - datetime.utcnow()).total_seconds()
             )),
             "host_user_id": p.session.host_user_id,
         })
@@ -637,7 +638,7 @@ def accept_invite(session_id):
     session = PomodoroSession.query.get(session_id)
     if not session or session.end_time:
         return jsonify({"error": "A session már lezárult"}), 410
-    if session.invite_deadline and session.invite_deadline < datetime.now(timezone.utc):
+    if session.invite_deadline and session.invite_deadline < datetime.utcnow():
         return jsonify({"error": "A meghívó lejárt"}), 410
 
     participant.invite_status = "accepted"
