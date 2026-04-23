@@ -13,6 +13,7 @@ import { Toaster } from "./ui/sonner";
 import { toast } from "sonner";
 import { authService, pomodoroService } from "../service/api";
 import { PomodoroInviteModal } from "./PomodoroInviteModal";
+import { useGroupSession } from "../hooks/useGroupSession";
 
 export function Layout() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -21,51 +22,33 @@ export function Layout() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pomodoroInvite, setPomodoroInvite] = useState(null);
-  /** 401 esetén leáll (lejárt/hibás token), ne spammelje a backendet */
-  const [pomodoroInvitePollStopped, setPomodoroInvitePollStopped] =
-    useState(false);
 
   const closePomodoroInvite = useCallback(() => setPomodoroInvite(null), []);
 
+  const handleInviteReceived = useCallback((invite) => {
+    setPomodoroInvite((prev) => prev ?? invite);
+  }, []);
+
+  useGroupSession({
+    backendSessionId: null,
+    onInviteReceived: handleInviteReceived,
+    onSessionFinished: null,
+    enabled: isAuthenticated,
+  });
+
+  // Initial fallback – egyszer, login után (page refresh / offline esetén)
   useEffect(() => {
     if (!isAuthenticated) {
       setPomodoroInvite(null);
-      setPomodoroInvitePollStopped(false);
+      return;
     }
+    pomodoroService.getPendingInvites()
+      .then((data) => {
+        const first = (data.invites || [])[0];
+        if (first) setPomodoroInvite(first);
+      })
+      .catch(() => {});
   }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated || pomodoroInvitePollStopped) return;
-    if (!localStorage.getItem("authToken")) return;
-
-    let cancelled = false;
-    const tick = async () => {
-      if (!localStorage.getItem("authToken")) return;
-      try {
-        const data = await pomodoroService.getPendingInvites();
-        if (cancelled) return;
-        const invites = data.invites || [];
-        setPomodoroInvite((prev) => {
-          if (prev) {
-            const still = invites.find((i) => i.session_id === prev.session_id);
-            return still ?? null;
-          }
-          return invites[0] ?? null;
-        });
-      } catch (err) {
-        if (err?.response?.status === 401) {
-          setPomodoroInvitePollStopped(true);
-          setPomodoroInvite(null);
-        }
-      }
-    };
-    tick();
-    const id = setInterval(tick, 2000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [isAuthenticated, pomodoroInvitePollStopped]);
 
   // App indításkor ellenőrizzük a localStorage-t
   useEffect(() => {
@@ -101,7 +84,6 @@ export function Layout() {
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
-      setPomodoroInvitePollStopped(false);
       
       toast.success("Sikeres bejelentkezés!", {
         description: "Üdvözlünk újra!"
@@ -132,7 +114,6 @@ export function Layout() {
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
-      setPomodoroInvitePollStopped(false);
       
       toast.success("Sikeres regisztráció!", {
         description: "Bejelentkeztél!"

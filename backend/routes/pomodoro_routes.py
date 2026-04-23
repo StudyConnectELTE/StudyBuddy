@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timezone
-from models import db, PomodoroSession, PomodoroSessionParticipant, UserPomodoroSettings, GroupMember
+from datetime import datetime, timezone, timedelta
+from models import db, PomodoroSession, PomodoroSessionParticipant, UserPomodoroSettings, GroupMember, Group
 from services.auth_service import verify_jwt_token
 
 # WebSocket functionality (optional)
@@ -301,11 +301,17 @@ def start_pomodoro():
         participants = [m.user_id for m in group_members]
 
     # 4) PomodoroSession létrehozása
+    invite_deadline = None
+    if group_id:
+        invite_deadline = datetime.now(timezone.utc) + timedelta(seconds=60)
+
     session = PomodoroSession(
         mode=mode,
         start_time=datetime.now(timezone.utc),
         cycle_count=0,
         host_user_id=user_id,
+        group_id=group_id if group_id else None,
+        invite_deadline=invite_deadline,
     )
 
     db.session.add(session)
@@ -322,11 +328,32 @@ def start_pomodoro():
             session_id=session.id,
             user_id=uid,
             task_text=task_text,
-            joined_at=datetime.now(timezone.utc)
+            joined_at=datetime.now(timezone.utc),
+            invite_status="accepted" if uid == user_id else "pending",
         )
         db.session.add(participant)
 
     db.session.commit()
+
+    # 6) invite_received WS emit a meghívottaknak
+    if group_id and invite_deadline:
+        socketio_instance = get_socketio()
+        if socketio_instance:
+            grp = Group.query.get(group_id)
+            for uid in participants:
+                if uid != user_id:
+                    socketio_instance.emit(
+                        "invite_received",
+                        {
+                            "session_id": session.id,
+                            "group_name": grp.name if grp else None,
+                            "host_user_id": user_id,
+                            "seconds_left": 60,
+                            "invite_deadline": invite_deadline.isoformat(),
+                        },
+                        room=f"user_{uid}",
+                        namespace="/pomodoro",
+                    )
 
     return jsonify({
         "message": "Pomodoro session elindítva",
@@ -334,6 +361,7 @@ def start_pomodoro():
         "mode": session.mode,
         "participants": participants,
         "tasks": tasks,
+        "invite_deadline": invite_deadline.isoformat() if invite_deadline else None,
         "settings_used": {
             "focus": settings.focus_minutes,
             "short_break": settings.short_break_minutes,
@@ -393,6 +421,7 @@ def get_pomodoro_session(session_id):
         "host_user_id": session.host_user_id,
         "participants": participants_data,
         "updated_at": session.updated_at.isoformat(),
+        "invite_deadline": session.invite_deadline.isoformat() if session.invite_deadline else None,
     }
 
     return jsonify(response), 200
@@ -478,6 +507,12 @@ def leave_pomodoro_session(session_id):
     participant.left_at = datetime.utcnow()
     db.session.commit()
 
+    emit_to_session(session_id, "user_left", {
+        "user_id": user_id,
+        "session_id": session_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
     # 5) Opcionális: ha mindenki kilépett → session lezárása
     active_participants = PomodoroSessionParticipant.query.filter_by(
         session_id=session_id,
@@ -487,6 +522,12 @@ def leave_pomodoro_session(session_id):
     if active_participants == 0:
         session.end_time = datetime.utcnow()
         db.session.commit()
+
+        emit_to_session(session_id, "session_finished", {
+            "session_id": session_id,
+            "end_time": session.end_time.isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
 
         return jsonify({
             "message": "Kiléptél a sessionből. Mivel mindenki kilépett, a session lezárult.",
@@ -527,6 +568,12 @@ def finish_pomodoro_session(session_id):
     session.end_time = datetime.utcnow()
     db.session.commit()
 
+    emit_to_session(session_id, "session_finished", {
+        "session_id": session_id,
+        "end_time": session.end_time.isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
     return jsonify({
         "message": "Session sikeresen befejezve",
         "session_id": session.id,
@@ -535,6 +582,90 @@ def finish_pomodoro_session(session_id):
         "end_time": session.end_time.isoformat(),
         "host_user_id": session.host_user_id
     }), 200
+
+
+@pomodoro_bp.route("/pomodoro/pending-invites", methods=["GET"])
+def get_pending_invites():
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    pending = PomodoroSessionParticipant.query.filter_by(
+        user_id=user_id, invite_status="pending"
+    ).join(PomodoroSession).filter(
+        PomodoroSession.end_time == None,
+        PomodoroSession.invite_deadline > datetime.now(timezone.utc)
+    ).all()
+
+    invites = []
+    for p in pending:
+        grp = Group.query.get(p.session.group_id) if p.session.group_id else None
+        invites.append({
+            "session_id": p.session_id,
+            "group_name": grp.name if grp else None,
+            "seconds_left": max(0, int(
+                (p.session.invite_deadline - datetime.now(timezone.utc)).total_seconds()
+            )),
+            "host_user_id": p.session.host_user_id,
+        })
+
+    return jsonify({"invites": invites}), 200
+
+
+@pomodoro_bp.route("/pomodoro/session/<int:session_id>/invite/accept", methods=["POST"])
+def accept_invite(session_id):
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    active = (
+        PomodoroSessionParticipant.query
+        .filter_by(user_id=user_id, left_at=None)
+        .join(PomodoroSession, PomodoroSession.id == PomodoroSessionParticipant.session_id)
+        .filter(PomodoroSession.end_time == None, PomodoroSession.id != session_id)
+        .first()
+    )
+    if active:
+        return jsonify({"error": "Már van aktív sessioned.", "code": "ALREADY_IN_SESSION"}), 400
+
+    participant = PomodoroSessionParticipant.query.filter_by(
+        session_id=session_id, user_id=user_id, invite_status="pending"
+    ).first()
+    if not participant:
+        return jsonify({"error": "Érvénytelen meghívó"}), 404
+
+    session = PomodoroSession.query.get(session_id)
+    if not session or session.end_time:
+        return jsonify({"error": "A session már lezárult"}), 410
+    if session.invite_deadline and session.invite_deadline < datetime.now(timezone.utc):
+        return jsonify({"error": "A meghívó lejárt"}), 410
+
+    participant.invite_status = "accepted"
+    db.session.commit()
+
+    emit_to_session(session_id, "user_joined", {
+        "user_id": user_id,
+        "session_id": session_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return jsonify({"message": "Meghívó elfogadva", "session_id": session_id}), 200
+
+
+@pomodoro_bp.route("/pomodoro/session/<int:session_id>/invite/decline", methods=["POST"])
+def decline_invite(session_id):
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    participant = PomodoroSessionParticipant.query.filter_by(
+        session_id=session_id, user_id=user_id
+    ).first()
+    if participant:
+        participant.invite_status = "declined"
+        db.session.commit()
+
+    return jsonify({"message": "Meghívó elutasítva"}), 200
 
 
 # ============================================
@@ -546,7 +677,7 @@ def get_socketio():
     if not SOCKETIO_AVAILABLE:
         return None
     from flask import current_app
-    return current_app.extensions.get('socketio')
+    return getattr(current_app, 'socketio', None)
 
 def emit_to_session(session_id, event, data):
     """Broadcast an event to all users in a session room"""
@@ -592,8 +723,19 @@ def get_session_participants(session_id):
 # WebSocket Namespace: /pomodoro (csak ha elérhető)
 if SOCKETIO_AVAILABLE:
     class PomodoroNamespace(Namespace):
-        def on_connect(self):
-            print(f"Client connected: {request.sid}")
+        def on_connect(self, auth=None):
+            token = (auth or {}).get('token', '')
+            try:
+                token_clean = token.split()[1] if token.startswith("Bearer") else token
+                decoded = verify_jwt_token(token_clean)
+                user_id = decoded.get("user_id") if decoded else None
+            except Exception:
+                user_id = None
+
+            if user_id:
+                join_room(f"user_{user_id}")
+
+            print(f"Client connected: {request.sid} user_id={user_id}")
             emit("connect_response", {"data": "Csatlakozva a Pomodoro WebSocket-hez"})
 
         def on_disconnect(self):
