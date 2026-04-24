@@ -3,9 +3,9 @@ import axios from "axios";
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5000";
-  
+
 const api = axios.create({
-  baseURL: `${API_URL}`, // http://localhost:5000/
+  baseURL: `${API_URL}`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -18,17 +18,25 @@ const getAuthToken = () => localStorage.getItem("authToken");
 export function getApiErrorMessage(err) {
   const status = err?.response?.status;
   const d = err?.response?.data;
+
   if (typeof d === "string") {
     const stripped = d.replace(/<[^>]*>/g, "").trim();
     return stripped.slice(0, 400) || `Szerverhiba (${status || "?"})`;
   }
+
   if (d && typeof d === "object") {
     if (typeof d.error === "string") return d.error;
     if (typeof d.message === "string") return d.message;
   }
-  if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
-    return "Nem érhető el a backend (CORS / rossz URL / a szerver nem fut). Ellenőrizd a VITE_API_URL-t és a Docker konténert.";
+
+  if (status === 404) {
+    return "A kért API végpont nem található (404).";
   }
+
+  if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+    return "Nem érhető el a backend.";
+  }
+
   if (status) return `Szerverhiba (${status}).`;
   return err?.message || "Ismeretlen hiba";
 }
@@ -41,9 +49,11 @@ const authService = {
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);
       }
+
       if (response.data.user) {
         localStorage.setItem("authUser", JSON.stringify(response.data.user));
       }
+
       return response.data;
     } catch (error) {
       throw error.response?.data || "Registration failed";
@@ -53,12 +63,15 @@ const authService = {
   login: async (email, password) => {
     try {
       const response = await api.post("/login", { email, password });
+
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);
       }
+
       if (response.data.user) {
         localStorage.setItem("authUser", JSON.stringify(response.data.user));
       }
+
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || "Login failed";
@@ -68,12 +81,15 @@ const authService = {
   forgotPassword: async (email) => {
     try {
       const response = await api.post("/forgot-password", { email });
+
       if (response.data.token) {
         localStorage.setItem("authToken", response.data.token);
       }
+
       if (response.data.user) {
         localStorage.setItem("authUser", JSON.stringify(response.data.user));
       }
+
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || "Forgot password failed";
@@ -81,8 +97,8 @@ const authService = {
   },
 
   logout: () => {
-    localStorage.clear(); // ← MINDEN törlése!
-    window.dispatchEvent(new Event("storage")); // ← Redux értesítés
+    localStorage.clear();
+    window.dispatchEvent(new Event("storage"));
   },
 
   getUser: () => {
@@ -93,28 +109,32 @@ const authService = {
   isAuthenticated: () => {
     return !!localStorage.getItem("authToken");
   },
-    // Jelszóváltoztatás - ÚJ FÜGGVÉNY!
+
   changePassword: async (currentPassword, newPassword) => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await api.put('/change-password', {
-        current_password: currentPassword,
-        new_password: newPassword
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Sikeres → localStorage frissítés
+      const token = getAuthToken();
+      const response = await api.put(
+        "/change-password",
+        {
+          current_password: currentPassword,
+          new_password: newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (response.data.user) {
-        localStorage.setItem('authUser', JSON.stringify(response.data.user));
+        localStorage.setItem("authUser", JSON.stringify(response.data.user));
       }
-      
+
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Jelszóváltoztatás sikertelen az api-n';
+      throw error.response?.data?.message || "Jelszóváltoztatás sikertelen";
     }
-  }
-
+  },
 };
 
 // GROUP SERVICE
@@ -189,11 +209,15 @@ const groupService = {
 
   markGroupPostsRead: async (groupId) => {
     const token = getAuthToken();
-    const response = await api.post(`/groups/${groupId}/mark-posts-read`, {}, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await api.post(
+      `/groups/${groupId}/mark-posts-read`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data;
   },
 };
@@ -272,6 +296,19 @@ const pomodoroService = {
     return response.data;
   },
 
+  getStats: async (year, month) => {
+    const token = getAuthToken();
+    const response = await api.get(
+      `/pomodoro/stats?year=${year}&month=${month}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
   acceptInvite: async (sessionId) => {
     const token = getAuthToken();
     const response = await api.post(
@@ -315,21 +352,22 @@ const forumService = {
 
   createPost: async (groupId, title, content, files = null) => {
     const token = getAuthToken();
-    
-    // Ha van fájl (tömb vagy egyetlen fájl)
-    const fileArray = Array.isArray(files) ? files : (files ? [files] : []);
-    
+    const fileArray = Array.isArray(files) ? files : files ? [files] : [];
+
     if (fileArray.length > 0) {
       // Multipart/form-data használata fájl esetén
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
       
+      
+      // Minden fájlt hozzáadunk
+
       // Minden fájlt hozzáadunk
       fileArray.forEach((file) => {
         formData.append("files", file);
       });
-      
+
       const response = await axios.post(
         `${API_URL}/groups/${groupId}/posts`,
         formData,
@@ -368,13 +406,13 @@ const forumService = {
 
   createComment: async (postId, content, file = null) => {
     const token = getAuthToken();
-    
+
     if (file) {
       // Multipart/form-data használata fájl esetén
       const formData = new FormData();
       formData.append("content", content);
       formData.append("file", file);
-      
+
       const response = await axios.post(
         `${API_URL}/posts/${postId}/comments`,
         formData,
@@ -523,7 +561,7 @@ const subjectService = {
         },
       }
     );
-    return response.data; // [{ code, name }]
+    return response.data;
   },
 
   getGroupsBySubjectName: async (name) => {
@@ -536,7 +574,7 @@ const subjectService = {
         },
       }
     );
-    return response.data; // [{ id, name, subject, ... }]
+    return response.data;
   },
 };
 
@@ -550,4 +588,5 @@ export {
   subjectService,
   pomodoroService,
 };
+
 export default authService;

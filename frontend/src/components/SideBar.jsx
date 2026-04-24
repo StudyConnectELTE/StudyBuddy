@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   Timer,
+  BarChart3,
 } from "lucide-react";
 
 export function Sidebar({ currentPage, onPageChange, onLogout }) {
@@ -50,6 +51,12 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
       description: "Fókuszálj a tanulásra",
     },
     {
+      id: "statistics",
+      name: "Statisztika",
+      icon: BarChart3,
+      description: "Pomodoro statisztikák és analitika",
+    },
+    {
       id: "profile",
       name: "Profil és Beállitások",
       icon: User,
@@ -81,6 +88,7 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
           <div className="w-12 h-12 bg-sidebar-primary rounded-full flex items-center justify-center shadow-lg">
             <BookOpen className="w-6 h-6 text-sidebar-primary-foreground" />
           </div>
+
           {isExpanded && (
             <div className="mt-3 text-center">
               <h2 className="text-sidebar-foreground font-semibold text-base whitespace-nowrap">
@@ -137,6 +145,7 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
                         >
                           {item.name}
                         </div>
+
                         {isActive && (
                           <div className="text-xs text-sidebar-primary-foreground/70 mt-0.5 whitespace-nowrap">
                             {item.description}

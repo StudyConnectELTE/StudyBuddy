@@ -13,6 +13,7 @@ import { Toaster } from "./ui/sonner";
 import { toast } from "sonner";
 import { authService, pomodoroService } from "../service/api";
 import { PomodoroInviteModal } from "./PomodoroInviteModal";
+import PomodoroStatsPage from "./PomodoroStatsPage";
 
 export function Layout() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -203,6 +204,9 @@ export function Layout() {
         return (
           <PomodoroPage blockGroupStartDueToInvite={!!pomodoroInvite} />
         );
+
+      case "statistics":
+        return <PomodoroStatsPage />;
       case "profile":
         return <ProfileSettingsPage userData={userData} />;
       default:

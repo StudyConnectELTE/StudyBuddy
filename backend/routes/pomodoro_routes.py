@@ -1,9 +1,20 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
-from models import db, PomodoroSession, PomodoroSessionParticipant, UserPomodoroSettings, GroupMember
+from calendar import monthrange
+from sqlalchemy.orm import joinedload
+
+from models import (
+    db,
+    PomodoroSession,
+    PomodoroSessionParticipant,
+    UserPomodoroSettings,
+    GroupMember,
+)
 from services.auth_service import verify_jwt_token
 
+
 pomodoro_bp = Blueprint("pomodoro", __name__)
+
 
 def get_user_id():
     auth = request.headers.get("Authorization")
@@ -12,7 +23,7 @@ def get_user_id():
 
     try:
         token = auth.split()[1]
-    except:
+    except Exception:
         return None, jsonify({"error": "Hibás token"}), 401
 
     decoded = verify_jwt_token(token)
@@ -23,7 +34,7 @@ def get_user_id():
 
 
 @pomodoro_bp.route("/pomodoro/start", methods=["POST"])
-def start_pomodoro(): 
+def start_pomodoro():
     user_id, err, code = get_user_id()
     if err:
         return err, code
@@ -38,8 +49,11 @@ def start_pomodoro():
     active = (
         PomodoroSessionParticipant.query
         .filter_by(user_id=user_id, left_at=None)
-        .join(PomodoroSession, PomodoroSession.id == PomodoroSessionParticipant.session_id)
-        .filter(PomodoroSession.end_time == None)
+        .join(
+            PomodoroSession,
+            PomodoroSession.id == PomodoroSessionParticipant.session_id
+        )
+        .filter(PomodoroSession.end_time.is_(None))
         .first()
     )
 
@@ -84,27 +98,30 @@ def start_pomodoro():
             session_id=session.id,
             user_id=uid,
             task_text=task_text,
-            joined_at=datetime.now(timezone.utc)
+            joined_at=datetime.now(timezone.utc),
         )
         db.session.add(participant)
 
     db.session.commit()
 
-    return jsonify({
-        "message": "Pomodoro session elindítva",
-        "session_id": session.id,
-        "mode": session.mode,
-        "participants": participants,
-        "tasks": tasks,
-        "settings_used": {
-            "focus": settings.focus_minutes,
-            "short_break": settings.short_break_minutes,
-            "long_break": settings.long_break_minutes,
-            "cycles_before_long_break": settings.cycles_before_long_break,
-            "auto_start_breaks": settings.auto_start_breaks,
-            "auto_start_focus": settings.auto_start_focus,
+    return jsonify(
+        {
+            "message": "Pomodoro session elindítva",
+            "session_id": session.id,
+            "mode": session.mode,
+            "participants": participants,
+            "tasks": tasks,
+            "settings_used": {
+                "focus": settings.focus_minutes,
+                "short_break": settings.short_break_minutes,
+                "long_break": settings.long_break_minutes,
+                "cycles_before_long_break": settings.cycles_before_long_break,
+                "auto_start_breaks": settings.auto_start_breaks,
+                "auto_start_focus": settings.auto_start_focus,
+            },
         }
-    }), 201
+    ), 201
+
 
 @pomodoro_bp.route("/pomodoro/session/<int:session_id>", methods=["GET"])
 def get_pomodoro_session(session_id):
@@ -129,7 +146,7 @@ def get_pomodoro_session(session_id):
     # 2) Ellenőrzés: a user résztvevő-e
     participant = PomodoroSessionParticipant.query.filter_by(
         session_id=session_id,
-        user_id=user_id
+        user_id=user_id,
     ).first()
 
     if not participant:
@@ -138,12 +155,14 @@ def get_pomodoro_session(session_id):
     # 3) Résztvevők összegyűjtése
     participants_data = []
     for p in session.participants:
-        participants_data.append({
-            "user_id": p.user_id,
-            "task_text": p.task_text,
-            "joined_at": p.joined_at.isoformat(),
-            "left_at": p.left_at.isoformat() if p.left_at else None
-        })
+        participants_data.append(
+            {
+                "user_id": p.user_id,
+                "task_text": p.task_text,
+                "joined_at": p.joined_at.isoformat(),
+                "left_at": p.left_at.isoformat() if p.left_at else None,
+            }
+        )
 
     # 4) Session metaadatok összeállítása
     response = {
@@ -158,6 +177,7 @@ def get_pomodoro_session(session_id):
     }
 
     return jsonify(response), 200
+
 
 @pomodoro_bp.route("/pomodoro/session/<int:session_id>/task", methods=["PATCH"])
 def update_pomodoro_task(session_id):
@@ -184,7 +204,7 @@ def update_pomodoro_task(session_id):
     # 2) Ellenőrzés: a user résztvevő-e
     participant = PomodoroSessionParticipant.query.filter_by(
         session_id=session_id,
-        user_id=user_id
+        user_id=user_id,
     ).first()
 
     if not participant:
@@ -196,15 +216,18 @@ def update_pomodoro_task(session_id):
 
     # 4) Task módosítása / létrehozása
     participant.task_text = new_task
-    
+
     db.session.commit()
 
-    return jsonify({
-        "message": "Task frissítve",
-        "session_id": session_id,
-        "user_id": user_id,
-        "task_text": new_task
-    }), 200
+    return jsonify(
+        {
+            "message": "Task frissítve",
+            "session_id": session_id,
+            "user_id": user_id,
+            "task_text": new_task,
+        }
+    ), 200
+
 
 @pomodoro_bp.route("/pomodoro/session/<int:session_id>/leave", methods=["POST"])
 def leave_pomodoro_session(session_id):
@@ -226,7 +249,7 @@ def leave_pomodoro_session(session_id):
     # 2) Résztvevő lekérése
     participant = PomodoroSessionParticipant.query.filter_by(
         session_id=session_id,
-        user_id=user_id
+        user_id=user_id,
     ).first()
 
     if not participant:
@@ -243,22 +266,27 @@ def leave_pomodoro_session(session_id):
     # 5) Opcionális: ha mindenki kilépett → session lezárása
     active_participants = PomodoroSessionParticipant.query.filter_by(
         session_id=session_id,
-        left_at=None
+        left_at=None,
     ).count()
 
     if active_participants == 0:
         session.end_time = datetime.utcnow()
         db.session.commit()
 
-        return jsonify({
-            "message": "Kiléptél a sessionből. Mivel mindenki kilépett, a session lezárult.",
-            "session_id": session_id
-        }), 200
+        return jsonify(
+            {
+                "message": "Kiléptél a sessionből. Mivel mindenki kilépett, a session lezárult.",
+                "session_id": session_id,
+            }
+        ), 200
 
-    return jsonify({
-        "message": "Kiléptél a sessionből.",
-        "session_id": session_id
-    }), 200
+    return jsonify(
+        {
+            "message": "Kiléptél a sessionből.",
+            "session_id": session_id,
+        }
+    ), 200
+
 
 @pomodoro_bp.route("/pomodoro/session/<int:session_id>/finish", methods=["POST"])
 def finish_pomodoro_session(session_id):
@@ -290,14 +318,17 @@ def finish_pomodoro_session(session_id):
     session.end_time = datetime.utcnow()
     db.session.commit()
 
-    return jsonify({
-        "message": "Session sikeresen befejezve",
-        "session_id": session.id,
-        "mode": session.mode,
-        "start_time": session.start_time.isoformat(),
-        "end_time": session.end_time.isoformat(),
-        "host_user_id": session.host_user_id
-    }), 200
+    return jsonify(
+        {
+            "message": "Session sikeresen befejezve",
+            "session_id": session.id,
+            "mode": session.mode,
+            "start_time": session.start_time.isoformat(),
+            "end_time": session.end_time.isoformat(),
+            "host_user_id": session.host_user_id,
+        }
+    ), 200
+
 
 @pomodoro_bp.route("/pomodoro/stats", methods=["GET"])
 def get_pomodoro_stats():
@@ -333,12 +364,12 @@ def get_pomodoro_stats():
         end = datetime(year, month + 1, 1, tzinfo=timezone.utc)
 
     # Lekérjük az adott userhez kötődő sessionöket a hónapban
-    # Itt olyan sessionöket nézünk, ahol a user résztvevő volt,
-    # és a session legalább részben ebbe az intervallumba esik.
     sessions = (
         db.session.query(PomodoroSession)
-        .join(PomodoroSessionParticipant,
-              PomodoroSessionParticipant.session_id == PomodoroSession.id)
+        .join(
+            PomodoroSessionParticipant,
+            PomodoroSessionParticipant.session_id == PomodoroSession.id,
+        )
         .filter(
             PomodoroSessionParticipant.user_id == user_id,
             PomodoroSession.mode == "FOCUS",
@@ -346,29 +377,28 @@ def get_pomodoro_stats():
             PomodoroSession.start_time < end,
             PomodoroSession.end_time.isnot(None),
         )
-        .options(db.joinedload(PomodoroSession.participants))
+        .options(joinedload(PomodoroSession.participants))
         .all()
     )
 
     # Napokra bontás
-    # daily[day_index] = dict(...)
-    from collections import defaultdict
-
     daily = []
     for i in range(days_in_month):
         day = i + 1
         date_obj = datetime(year, month, day, tzinfo=timezone.utc)
-        daily.append({
-            "day": day,
-            "date": date_obj.isoformat(),
-            "focusMinutes": 0,
-            "tasks": 0,
-            "groupSessions": 0,
-            "taskList": [],
-        })
+        daily.append(
+            {
+                "day": day,
+                "date": date_obj.isoformat(),
+                "focusMinutes": 0,
+                "tasks": 0,
+                "groupSessions": 0,
+                "taskList": [],
+            }
+        )
 
     # Segéd: day -> index
-    day_index = lambda dt: dt.day - 1
+    day_index = lambda dt: dt.day - 1  # noqa: E731
 
     total_focus_minutes = 0
     total_tasks = 0
@@ -401,16 +431,18 @@ def get_pomodoro_stats():
             if p.user_id != user_id:
                 continue
             if p.task_text:
-                # itt egyszerűen 1 task / participant sor
                 daily[d_idx]["tasks"] += 1
                 total_tasks += 1
-                daily[d_idx]["taskList"].append({
-                    "id": f"{year}-{month}-{daily[d_idx]['day']}-{task_id_counter}",
-                    "title": p.task_text,
-                    "day": daily[d_idx]["day"],
-                    "createdAt": p.joined_at.isoformat()
-                    if p.joined_at else daily[d_idx]["date"],
-                })
+                daily[d_idx]["taskList"].append(
+                    {
+                        "id": f"{year}-{month}-{daily[d_idx]['day']}-{task_id_counter}",
+                        "title": p.task_text,
+                        "day": daily[d_idx]["day"],
+                        "createdAt": p.joined_at.isoformat()
+                        if p.joined_at
+                        else daily[d_idx]["date"],
+                    }
+                )
                 task_id_counter += 1
 
     # activeDays
@@ -440,11 +472,20 @@ def get_pomodoro_stats():
     longest_streak = get_longest_streak(daily)
     current_streak = get_current_streak(daily)
 
-    # hónap label (frontend magyar hónapneveket használ)
+    # hónap label
     MONTH_NAMES_HU = [
-        "január", "február", "március", "április",
-        "május", "június", "július", "augusztus",
-        "szeptember", "október", "november", "december",
+        "január",
+        "február",
+        "március",
+        "április",
+        "május",
+        "június",
+        "július",
+        "augusztus",
+        "szeptember",
+        "október",
+        "november",
+        "december",
     ]
     month_index = month - 1
     month_label = f"{year}. {MONTH_NAMES_HU[month_index]}"
@@ -463,3 +504,13 @@ def get_pomodoro_stats():
     }
 
     return jsonify(response), 200
+
+
+@pomodoro_bp.route("/pomodoro/pending-invites", methods=["GET"])
+def get_pending_invites():
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    # TODO: ide kerülhet majd a valós lekérdezés
+    return jsonify({"invites": []}), 200

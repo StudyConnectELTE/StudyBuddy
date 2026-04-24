@@ -17,28 +17,15 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-
-const MONTH_NAMES_HU = [
-  "január",
-  "február",
-  "március",
-  "április",
-  "május",
-  "június",
-  "július",
-  "augusztus",
-  "szeptember",
-  "október",
-  "november",
-  "december",
-];
+} from "./ui/Dialog";
+import { pomodoroService, getApiErrorMessage } from "../service/api";
 
 const WEEKDAY_NAMES_HU = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
 
 function formatHoursMinutes(totalMinutes) {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+  const safeMinutes = Number(totalMinutes || 0);
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
   return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
@@ -67,7 +54,6 @@ function HighlightCard({ icon: IconComponent, title, value, subtitle }) {
         <div className="w-14 h-14 rounded-2xl border border-primary/20 bg-primary/10 flex items-center justify-center flex-shrink-0">
           <IconComponent className="w-7 h-7 text-primary" />
         </div>
-
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
           <p className="mt-2 text-4xl font-bold leading-none text-foreground">
@@ -105,7 +91,6 @@ function StatCard({ icon: IconComponent, title, value, onClick, clickable = fals
             </p>
           )}
         </div>
-
         <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
           <IconComponent className="w-5 h-5 text-primary" />
         </div>
@@ -129,7 +114,6 @@ function MonthSummaryRow({ totalFocusMinutes, totalTasks, totalGroupSessions }) 
             </p>
           </div>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -139,7 +123,6 @@ function MonthSummaryRow({ totalFocusMinutes, totalTasks, totalGroupSessions }) 
               {formatHoursMinutes(totalFocusMinutes)}
             </p>
           </div>
-
           <div className="rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               Feladatok
@@ -148,7 +131,6 @@ function MonthSummaryRow({ totalFocusMinutes, totalTasks, totalGroupSessions }) 
               {totalTasks}
             </p>
           </div>
-
           <div className="rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               Csoport session
@@ -164,7 +146,7 @@ function MonthSummaryRow({ totalFocusMinutes, totalTasks, totalGroupSessions }) 
 }
 
 function MonthlyActivityChart({ daily }) {
-  const maxFocus = Math.max(...daily.map((d) => d.focusMinutes), 1);
+  const maxFocus = Math.max(...daily.map((d) => d.focusMinutes || 0), 1);
 
   return (
     <div className="bg-card border border-border rounded-3xl p-6 shadow-lg h-full">
@@ -179,15 +161,13 @@ function MonthlyActivityChart({ daily }) {
           </p>
         </div>
       </div>
-
       <div className="h-72 rounded-2xl bg-secondary/30 border border-border px-3 pb-8 pt-4">
         <div className="flex h-full items-end gap-2 overflow-hidden">
           {daily.map((entry) => {
             const height = `${Math.max(
               8,
-              (entry.focusMinutes / maxFocus) * 100
+              ((entry.focusMinutes || 0) / maxFocus) * 100
             )}%`;
-
             return (
               <div
                 key={entry.day}
@@ -196,11 +176,9 @@ function MonthlyActivityChart({ daily }) {
                 <div
                   className="w-full rounded-t-md bg-primary/80 hover:bg-primary transition-all"
                   style={{ height }}
-                  title={`${entry.day}. nap – ${entry.focusMinutes} perc fókusz`}
+                  title={`${entry.day}. nap – ${entry.focusMinutes || 0} perc fókusz`}
                 />
-                <span className="text-xs text-muted-foreground">
-                  {entry.day}
-                </span>
+                <span className="text-xs text-muted-foreground">{entry.day}</span>
               </div>
             );
           })}
@@ -211,7 +189,7 @@ function MonthlyActivityChart({ daily }) {
 }
 
 function MonthlyHeatmap({ daily }) {
-  const maxFocus = Math.max(...daily.map((d) => d.focusMinutes), 1);
+  const maxFocus = Math.max(...daily.map((d) => d.focusMinutes || 0), 1);
 
   if (!daily.length) return null;
 
@@ -260,7 +238,6 @@ function MonthlyHeatmap({ daily }) {
           <p className="text-sm text-muted-foreground">Havi fókusz áttekintés</p>
         </div>
       </div>
-
       <div className="rounded-2xl bg-secondary/30 border border-border p-4">
         <div className="grid grid-cols-7 gap-2 mb-3">
           {WEEKDAY_NAMES_HU.map((label) => (
@@ -272,7 +249,6 @@ function MonthlyHeatmap({ daily }) {
             </div>
           ))}
         </div>
-
         <div className="grid grid-cols-7 gap-2">
           {calendarCells.map((cell, index) => {
             if (cell.empty) {
@@ -283,26 +259,21 @@ function MonthlyHeatmap({ daily }) {
                 />
               );
             }
-
             const dateObj = new Date(cell.date);
-
             return (
               <div key={cell.day} className="group relative">
                 <div
                   className={`aspect-square rounded-xl border transition-all duration-200 cursor-pointer flex items-start justify-end p-1.5 hover:scale-[1.03] hover:shadow-md ${getHeatLevel(
-                    cell.focusMinutes,
+                    cell.focusMinutes || 0,
                     maxFocus
                   )}`}
-                  title={`${formatDateHu(dateObj)} – ${
-                    cell.focusMinutes
-                  } perc fókusz`}
+                  title={`${formatDateHu(dateObj)} – ${cell.focusMinutes || 0} perc fókusz`}
                   tabIndex={0}
                 >
                   <span className="text-[11px] font-medium text-foreground/80">
                     {cell.day}
                   </span>
                 </div>
-
                 <div className="pointer-events-none absolute left-1/2 top-0 z-20 w-48 -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-xl border border-border bg-card p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all">
                   <div className="font-semibold text-foreground">
                     {formatDateHu(dateObj)}
@@ -311,19 +282,19 @@ function MonthlyHeatmap({ daily }) {
                     <div>
                       Fókuszidő:{" "}
                       <span className="font-medium text-foreground">
-                        {cell.focusMinutes} perc
+                        {cell.focusMinutes || 0} perc
                       </span>
                     </div>
                     <div>
                       Feladatok:{" "}
                       <span className="font-medium text-foreground">
-                        {cell.tasks}
+                        {cell.tasks || 0}
                       </span>
                     </div>
                     <div>
-                      Group session:{" "}
+                      Csoport session:{" "}
                       <span className="font-medium text-foreground">
-                        {cell.groupSessions}
+                        {cell.groupSessions || 0}
                       </span>
                     </div>
                   </div>
@@ -332,12 +303,10 @@ function MonthlyHeatmap({ daily }) {
             );
           })}
         </div>
-
         <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="text-xs text-muted-foreground">
             Vidd rá az egeret egy napra a részletekhez
           </div>
-
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             <span>Kevesebb</span>
             <div className="h-4 w-4 rounded bg-secondary border border-border" />
@@ -363,7 +332,6 @@ function TasksDialog({ open, onOpenChange, tasks, monthLabel }) {
             A(z) {monthLabel} hónap sessionjei alatt felvett feladatok listája
           </DialogDescription>
         </DialogHeader>
-
         <div className="max-h-[60vh] overflow-y-auto pr-1">
           {tasks.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
@@ -379,11 +347,8 @@ function TasksDialog({ open, onOpenChange, tasks, monthLabel }) {
                   <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
                     <CheckSquare className="w-4 h-4 text-primary" />
                   </div>
-
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium text-foreground">
-                      {task.title}
-                    </div>
+                    <div className="font-medium text-foreground">{task.title}</div>
                     <div className="text-sm text-muted-foreground mt-1">
                       {formatDateHu(task.createdAt)}
                     </div>
@@ -400,21 +365,16 @@ function TasksDialog({ open, onOpenChange, tasks, monthLabel }) {
 
 export default function PomodoroStatsPage() {
   const today = new Date();
-  const currentMonthStart = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1
-  );
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStart);
   const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
-
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
 
     const loadStats = async () => {
       setLoading(true);
@@ -423,50 +383,31 @@ export default function PomodoroStatsPage() {
       try {
         const year = selectedMonth.getFullYear();
         const month = selectedMonth.getMonth() + 1;
-
-        const res = await fetch(
-          `/pomodoro/stats?year=${year}&month=${month}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              // Authorization: `Bearer ${token}`, // ha kell JWT header
-            },
-            signal: controller.signal,
-          }
-        );
-
-        if (!res.ok) {
-          let data = {};d
-          try {
-            data = await res.json();
-          } catch (e) {
-            // ignore
-          }
-          throw new Error(
-            data.error || "Nem sikerült betölteni a pomodoro statisztikát."
-          );
+        const data = await pomodoroService.getStats(year, month);
+        if (!cancelled) {
+          setStats(data);
         }
-
-        const data = await res.json();
-        setStats(data);
       } catch (err) {
-        if (err.name !== "AbortError") {
-          setError(err.message || "Ismeretlen hiba történt.");
+        if (!cancelled) {
+          setError(getApiErrorMessage(err));
           setStats(null);
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadStats();
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedMonth]);
 
   const monthlyTasks = useMemo(() => {
-    if (!stats) return [];
+    if (!stats?.daily) return [];
     return stats.daily.flatMap((day) =>
       (day.taskList || []).map((task) => ({
         ...task,
@@ -533,7 +474,6 @@ export default function PomodoroStatsPage() {
                 Havi analitika valós adatokkal
               </p>
             </div>
-
             <div className="flex items-center gap-3 flex-wrap">
               <div className="bg-card border border-border rounded-2xl p-2 flex items-center gap-2 shadow-sm">
                 <button
@@ -544,7 +484,6 @@ export default function PomodoroStatsPage() {
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-
                 <div className="min-w-[180px] text-center px-3">
                   <div className="text-xs uppercase tracking-wide text-muted-foreground">
                     Kiválasztott hónap
@@ -553,7 +492,6 @@ export default function PomodoroStatsPage() {
                     {stats.monthLabel}
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => changeMonth(1)}
@@ -586,12 +524,12 @@ export default function PomodoroStatsPage() {
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon={TimerReset}
-            title="Fókusz idő"
+            title="Fókuszidő"
             value={formatHoursMinutes(stats.totalFocusMinutes)}
           />
           <StatCard
             icon={CheckSquare}
-            title="Elvégzettt feladatok"
+            title="Elvégzett feladatok"
             value={stats.totalTasks}
             clickable
             onClick={() => setIsTasksDialogOpen(true)}
@@ -617,8 +555,8 @@ export default function PomodoroStatsPage() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <MonthlyActivityChart daily={stats.daily} />
-          <MonthlyHeatmap daily={stats.daily} />
+          <MonthlyActivityChart daily={stats.daily || []} />
+          <MonthlyHeatmap daily={stats.daily || []} />
         </div>
       </div>
 
