@@ -10,6 +10,7 @@ import {
   pomodoroService,
   getApiErrorMessage,
 } from "../service/api";
+import { useGroupSession } from "../hooks/useGroupSession";
 
 function formatTime(seconds) {
   if (seconds == null || seconds < 0) return "25:00";
@@ -190,38 +191,30 @@ export function PomodoroPage({ blockGroupStartDueToInvite = false }) {
     };
   }, [isGroupSession, showSessionSetup, isLoggedIn]);
 
+  const { participants: wsParticipants, emitLeaveSession } = useGroupSession({
+    backendSessionId: showSessionSetup ? null : backendSessionId,
+    onSessionFinished: () => {
+      toast.message("A csoportos session a szerveren lezárult.");
+      setBackendSessionId(null);
+      localStorage.removeItem("pomodoroGroupSessionId");
+      reset();
+      setShowSessionSetup(true);
+    },
+    onInviteReceived: null,
+  });
+
   useEffect(() => {
     if (!backendSessionId || showSessionSetup) {
       setSessionSnapshot(null);
       return;
     }
-    const id = backendSessionId;
-    let cancelled = false;
-    const fetchSession = async () => {
-      try {
-        const s = await pomodoroService.getSession(id);
-        if (cancelled) return;
-        setSessionSnapshot(s);
-        if (s.end_time) {
-          toast.message("A csoportos session a szerveren lezárult.");
-          setBackendSessionId(null);
-          localStorage.removeItem("pomodoroGroupSessionId");
-        }
-      } catch {
-        /* poll csendben újra */
-      }
-    };
-    fetchSession();
-    const t = setInterval(fetchSession, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
-  }, [backendSessionId, showSessionSetup]);
+    setSessionSnapshot({ participants: wsParticipants });
+  }, [wsParticipants, backendSessionId, showSessionSetup]);
 
   const clearGroupBackendSession = async () => {
     const id = backendSessionId;
     if (!id) return;
+    emitLeaveSession();
     try {
       await pomodoroService.leaveSession(id);
     } catch {
