@@ -19,6 +19,9 @@ class User(db.Model):
     hobbies = db.Column(db.Text, nullable=True)
     avatar_url = db.Column(db.String(255), nullable=True)
 
+    xp = db.Column(db.Integer, default=0, nullable=False)
+    level = db.Column(db.Integer, default=1, nullable=False)
+
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

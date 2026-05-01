@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone, timedelta
 from models import db, PomodoroSession, PomodoroSessionParticipant, UserPomodoroSettings, GroupMember, Group
 from services.auth_service import verify_jwt_token
+from services.gamification_service import award_xp
 
 # WebSocket functionality (optional)
 try:
@@ -334,6 +335,30 @@ def start_pomodoro():
         db.session.add(participant)
 
     db.session.commit()
+
+    # Award XP for starting a pomodoro session
+    award_xp(user_id, 'start_pomodoro')
+
+    return jsonify(
+        {
+            "message": "Pomodoro session elindítva",
+            "session_id": session.id,
+            "mode": session.mode,
+            "participants": participants,
+            "tasks": tasks,
+            "invite_deadline": session.invite_deadline.isoformat() + "Z"
+            if session.invite_deadline
+            else None,
+            "settings_used": {
+                "focus": settings.focus_minutes,
+                "short_break": settings.short_break_minutes,
+                "long_break": settings.long_break_minutes,
+                "cycles_before_long_break": settings.cycles_before_long_break,
+                "auto_start_breaks": settings.auto_start_breaks,
+                "auto_start_focus": settings.auto_start_focus,
+            },
+        },
+    ), 201
 
     # 6) invite_received WS emit a meghívottaknak
     if group_id and invite_deadline:
