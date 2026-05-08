@@ -262,6 +262,17 @@ const pomodoroService = {
     return response.data;
   },
 
+  logFocusComplete: async () => {
+    const token = getAuthToken();
+    if (!token) return null;
+    const response = await api.post(
+      "/pomodoro/log-focus",
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
   getPendingInvites: async () => {
     const token = getAuthToken();
     const response = await api.get("/pomodoro/pending-invites", {

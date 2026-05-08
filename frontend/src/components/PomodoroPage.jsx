@@ -8,6 +8,7 @@ import {
   authService,
   groupService,
   pomodoroService,
+  gamificationService,
   getApiErrorMessage,
 } from "../service/api";
 import { useGroupSession } from "../hooks/useGroupSession";
@@ -190,6 +191,33 @@ export function PomodoroPage({ blockGroupStartDueToInvite = false }) {
       cancelled = true;
     };
   }, [isGroupSession, showSessionSetup, isLoggedIn]);
+
+  const prevModeRef = useRef(null);
+  useEffect(() => {
+    const wasJustFocus = prevModeRef.current === MODES.FOCUS;
+    const nowNotFocus = mode !== MODES.FOCUS;
+    const sessionActive = !showSessionSetup;
+
+    if (wasJustFocus && nowNotFocus && sessionActive && isLoggedIn) {
+      // A focus phase just completed — log XP (works for both solo and group)
+      pomodoroService.logFocusComplete()
+        .then(() => gamificationService.getXPGain())
+        .then((xpResult) => {
+          if (xpResult && xpResult.gained > 0) {
+            toast.success(`+${xpResult.gained} XP`, {
+              description: "Fókusz session befejezve!",
+            });
+            if (xpResult.leveledUp) {
+              toast.success(`Szint növekedés! ${xpResult.newLevel}. szint`, {
+                description: "Gratulálunk!",
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    }
+    prevModeRef.current = mode;
+  }, [mode, showSessionSetup, isLoggedIn, MODES.FOCUS]);
 
   const { participants: wsParticipants, emitLeaveSession } = useGroupSession({
     backendSessionId: showSessionSetup ? null : backendSessionId,
