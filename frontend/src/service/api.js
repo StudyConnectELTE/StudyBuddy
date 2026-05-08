@@ -542,6 +542,31 @@ const subjectService = {
 
 
 
+// GAMIFICATION SERVICE
+const gamificationService = {
+  // Fetches fresh XP/level from the server and syncs localStorage
+  refreshXP: async () => {
+    const token = getAuthToken();
+    if (!token) return null;
+    try {
+      const response = await api.get("/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = response.data;
+      if (user) {
+        const current = authService.getUser() || {};
+        const updated = { ...current, xp: user.xp, level: user.level };
+        localStorage.setItem("authUser", JSON.stringify(updated));
+        window.dispatchEvent(new Event("storage"));
+        return { xp: user.xp, level: user.level };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+};
+
 export {
   authService,
   groupService,
@@ -549,5 +574,6 @@ export {
   eventService,
   subjectService,
   pomodoroService,
+  gamificationService,
 };
 export default authService;
