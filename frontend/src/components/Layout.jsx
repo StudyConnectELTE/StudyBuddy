@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 import { Sidebar } from "./SideBar";
 import { MobileNav } from "./MobileNav";
 import HomePage from "./HomePage";
@@ -17,6 +19,7 @@ import { PomodoroInviteModal } from "./PomodoroInviteModal";
 import { useGroupSession } from "../hooks/useGroupSession";
 
 export function Layout() {
+  const { isDark, toggle: toggleTheme } = useTheme();
   const [currentPage, setCurrentPage] = useState("home");
   const [authMode, setAuthMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -181,7 +184,7 @@ export function Layout() {
       case "leaderboard":
         return <LeaderboardPage />;
       case "profile":
-        return <ProfileSettingsPage userData={userData} />;
+        return <ProfileSettingsPage userData={userData} isDark={isDark} onThemeToggle={toggleTheme} />;
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }
@@ -207,7 +210,15 @@ export function Layout() {
             />
           </div>
           
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto relative">
+            {/* Theme toggle — top right */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Váltás világos módra" : "Váltás sötét módra"}
+              className="fixed top-4 right-14 z-40 w-12 h-12 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-lg transition-all duration-200 hover:scale-110"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             {renderContent()}
           </main>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, School, Calendar, Bell, BellOff, Lock, Eye, EyeOff, Heart, ArrowLeft, Star } from "lucide-react";
+import { User, Mail, School, Calendar, Bell, BellOff, Lock, Eye, EyeOff, Heart, ArrowLeft, Star, Moon, Sun } from "lucide-react";
 import { useXP, getRankName } from "../hooks/useXP";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { authService } from "../service/api";  // 👈 HOZZÁADANDÓ!
 
 
-export function ProfileSettingsPage() {
+export function ProfileSettingsPage({ isDark, onThemeToggle }) {
   const navigate = useNavigate();  // ✅ useNavigate React Router-ból
   
   // Notification states
@@ -349,6 +349,39 @@ export function ProfileSettingsPage() {
                 </div>
               </Card>
             )}
+
+            {/* Appearance Settings */}
+            <Card className="p-6 border-border">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                  {isDark ? (
+                    <Moon className="w-5 h-5 text-primary" />
+                  ) : (
+                    <Sun className="w-5 h-5 text-primary" />
+                  )}
+                </div>
+                <div>
+                  <h3>Megjelenés</h3>
+                  <p className="text-sm text-muted-foreground">Téma beállítások</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg">
+                <div className="flex-1">
+                  <Label htmlFor="dark-mode-toggle" className="cursor-pointer">
+                    Sötét mód
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isDark ? "Sötét téma aktív" : "Világos téma aktív"}
+                  </p>
+                </div>
+                <Switch
+                  id="dark-mode-toggle"
+                  checked={isDark}
+                  onCheckedChange={onThemeToggle}
+                />
+              </div>
+            </Card>
 
             {/* Security Settings */}
             <Card className="p-6 border-border">

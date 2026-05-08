@@ -243,7 +243,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-        <div className="w-full max-w-6xl max-h-[90vh] bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-blue-200/50 overflow-hidden flex flex-col">
+        <div className="w-full max-w-6xl max-h-[90vh] bg-card backdrop-blur-md rounded-3xl shadow-2xl border border-border overflow-hidden flex flex-col">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white p-6 flex justify-between items-center rounded-t-3xl shadow-xl flex-shrink-0">
             <h2 className="text-2xl font-bold">Naptár</h2>
@@ -256,7 +256,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
           <div className="flex-1 overflow-hidden flex flex-col p-4 lg:p-6">
             <div className="flex-1 overflow-y-auto">
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-xs flex items-center">
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-xs flex items-center">
                   {error}
                   <button onClick={() => setError(null)} className="ml-2 text-red-600 hover:text-red-800 font-bold text-xl">×</button>
                 </div>
@@ -330,16 +330,16 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                             className={`h-16 w-full p-1.5 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md relative overflow-hidden flex flex-col  
                               ${day 
                                 ? isToday 
-                                  ? 'bg-gradient-to-br from-[#3b82f6]/10 to-blue-50/50 border-[#3b82f6]/40 ring-2 ring-[#3b82f6]/30 shadow-md' 
-                                  : 'bg-white/80 border-[#3b82f6]/20 hover:bg-[#3b82f6]/5 hover:border-[#3b82f6]/40' 
-                                : 'bg-gray-50/50 border-gray-200 opacity-40 cursor-default'
+                                  ? 'bg-primary/10 border-primary/40 ring-2 ring-primary/30 shadow-md' 
+                                  : 'bg-card border-border/40 hover:bg-primary/5 hover:border-primary/40' 
+                                : 'bg-muted/30 border-border/20 opacity-40 cursor-default'
                               }`}
                             onClick={() => handleDateClick(day)}
                           >
                             {day && (
                               <>
-                                <div className={`text-xs font-bold mb-1  ${
-                                  isToday ? 'text-[#012851]' : 'text-gray-800 hover:text-[#012851]'
+                                <div className={`text-xs font-bold mb-1 ${
+                                  isToday ? 'text-primary' : 'text-foreground'
                                 }`}>
                                   {day.getDate()}
                                 </div>
@@ -389,12 +389,12 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                             return (
                               <div
                                 key={event.id}
-                                className="p-6 rounded-2xl border border-[#3b82f6]/20 hover:shadow-2xl hover:border-[#3b82f6]/40 hover:-translate-y-1 transition-all duration-300 bg-gradient-to-br from-white/70 to-blue-50/30 backdrop-blur-sm"
+                                className="p-6 rounded-2xl border border-border hover:shadow-2xl hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 bg-card/70 backdrop-blur-sm"
                               >
                                 <div className="flex justify-between items-start gap-6">
                                   <div className="flex-1 min-w-0">
-                                    <h5 className="text-xl font-bold text-[#012851] mb-2 truncate">{event.title}</h5>
-                                    <p className="text-base text-[#6b7280] mb-2 font-medium">
+                                    <h5 className="text-xl font-bold text-foreground mb-2 truncate">{event.title}</h5>
+                                    <p className="text-base text-muted-foreground mb-2 font-medium">
                                       {eventDate.toLocaleString("hu-HU", {
                                         year: "numeric",
                                         month: "long",
@@ -404,10 +404,10 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                                       })}
                                     </p>
                                     {event.location && (
-                                      <p className="text-sm text-[#6b7280] mb-3 flex items-center">📍 {event.location}</p>
+                                      <p className="text-sm text-muted-foreground mb-3 flex items-center">📍 {event.location}</p>
                                     )}
                                     {event.description && (
-                                      <p className="text-base text-[#6b7280] leading-relaxed line-clamp-3">{event.description}</p>
+                                      <p className="text-base text-muted-foreground leading-relaxed line-clamp-3">{event.description}</p>
                                     )}
                                   </div>
                                   {event.creator_id === getCurrentUserId() && (
@@ -421,7 +421,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                                       </button>
                                       <button
                                         onClick={() => handleDeleteEvent(event.id)}
-                                        className="p-3 hover:bg-red-50 rounded-2xl text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200 border border-red-200"
+                                        className="p-3 hover:bg-destructive/10 rounded-2xl text-destructive hover:text-destructive/80 hover:shadow-md transition-all duration-200 border border-destructive/30"
                                         title="Törlés"
                                       >
                                         <DeleteIcon className="w-5 h-5" />
@@ -441,10 +441,10 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
           </div>
 
           {/* Footer */}
-          <div className="p-8 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-white/50 backdrop-blur-sm flex-shrink-0">
+          <div className="p-8 border-t border-border bg-card/50 backdrop-blur-sm flex-shrink-0">
             <button
               onClick={onClose}
-              className="w-full px-10 py-4 text-[#6b7280] hover:text-[#012851] hover:bg-[#3b82f6]/5 border border-[#6b7280]/30 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+              className="w-full px-10 py-4 text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-border rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
             >
               Bezárás
             </button>
@@ -455,7 +455,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
       {/* Event dialog */}
       {eventDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-blue-200/50 max-h-[80vh] flex flex-col">
+          <div className="w-full max-w-2xl bg-card backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-border max-h-[80vh] flex flex-col">
             <div className="bg-gradient-to-r from-[#012851] to-[#3b82f6] text-white p-8 flex-shrink-0">
               <h3 className="text-2xl font-bold pb-2">
                 {editingEvent
@@ -468,8 +468,8 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
 
             <div className="flex-1 overflow-y-auto p-10 space-y-8">
               <div>
-                <label className="block text-sm font-semibold text-[#012851] mb-3">
-                  Esemény neve <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold text-foreground mb-3">
+                  Esemény neve <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
@@ -478,14 +478,14 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                   required
                   disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
-                  className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed disabled:text-gray-500"
+                  className="w-full px-6 py-5 text-lg bg-background text-foreground border-2 border-border rounded-3xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-muted/50 disabled:cursor-not-allowed disabled:text-muted-foreground"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-[#012851] mb-3">
-                    Dátum <span className="text-red-500">*</span>
+                  <label className="block text-sm font-semibold text-foreground mb-3">
+                    Dátum <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="date"
@@ -493,12 +493,12 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                     onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
                     required
                     disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
-                    className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-5 text-lg bg-background text-foreground border-2 border-border rounded-3xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-muted/50 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#012851] mb-3">
-                    Idő <span className="text-red-500">*</span>
+                  <label className="block text-sm font-semibold text-foreground mb-3">
+                    Idő <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="time"
@@ -506,41 +506,41 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                     onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
                     required
                     disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
-                    className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-5 text-lg bg-background text-foreground border-2 border-border rounded-3xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-muted/50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#012851] mb-3">Helyszín (opcionális)</label>
+                <label className="block text-sm font-semibold text-foreground mb-3">Helyszín (opcionális)</label>
                 <input
                   type="text"
                   placeholder="Írd be a helyszínt..."
                   value={eventForm.location}
                   onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
                   disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
-                  className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-5 text-lg bg-background text-foreground border-2 border-border rounded-3xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-muted/50 disabled:cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#012851] mb-3">Leírás (opcionális)</label>
+                <label className="block text-sm font-semibold text-foreground mb-3">Leírás (opcionális)</label>
                 <textarea
                   rows={5}
                   placeholder="Írd be az esemény leírását..."
                   value={eventForm.description}
                   onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
                   disabled={editingEvent && editingEvent.creator_id !== getCurrentUserId()}
-                  className="w-full px-6 py-5 text-lg border-2 border-gray-200/50 rounded-3xl focus:ring-4 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6] resize-vertical transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-gray-50/50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-5 text-lg bg-background text-foreground border-2 border-border rounded-3xl focus:ring-4 focus:ring-primary/20 focus:border-primary resize-vertical transition-all duration-300 shadow-sm hover:shadow-md disabled:bg-muted/50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
-            <div className="px-10 py-8 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/70 to-white/50 backdrop-blur-sm flex gap-4 justify-end items-center flex-shrink-0">
+            <div className="px-10 py-8 border-t border-border bg-card/50 backdrop-blur-sm flex gap-4 justify-end items-center flex-shrink-0">
               {editingEvent && editingEvent.creator_id === getCurrentUserId() && (
                 <button
                   onClick={() => handleDeleteEvent(editingEvent.id)}
-                  className="px-8 py-4 text-red-600 hover:text-red-700 hover:bg-red-50/50 border border-red-200/50 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+                  className="px-8 py-4 text-destructive hover:text-destructive/80 hover:bg-destructive/10 border border-destructive/30 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
                 >
                   Törlés
                 </button>
@@ -552,7 +552,7 @@ const Calendar = ({ open, onClose, groupId, onEventCreated, onEventDeleted })  =
                   setEventForm({ title: "", date: "", time: "", description: "", location: "" });
                 }}
                 disabled={submitting}
-                className="px-8 py-4 text-[#6b7280] hover:text-[#012851] hover:bg-[#3b82f6]/5 border border-[#6b7280]/30 rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-4 text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-border rounded-3xl transition-all duration-200 font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Mégse
               </button>

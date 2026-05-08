@@ -114,8 +114,8 @@ function HomePage({ onNavigate}) {
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <Search className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="mb-2 text-black">Csoportok felfedezése</h3>
-              <p className="text-sm text-black/70">Böngéssz és csatlakozz tanuló csoportokhoz az ELTE tantárgy kínálata alapján</p>
+              <h3 className="mb-2 text-foreground">Csoportok felfedezése</h3>
+              <p className="text-sm text-muted-foreground">Böngéssz és csatlakozz tanuló csoportokhoz az ELTE tantárgy kínálata alapján</p>
             </button>
 
             <button
@@ -125,8 +125,8 @@ function HomePage({ onNavigate}) {
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <UserPlus className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="mb-2 text-black">Hívd meg a társaidat</h3>
-              <p className="text-sm text-black/70">Már van akivel bevált a közös tanulás? Mentsd el ismerősnek és hívd meg a többi csoportodba is</p>
+              <h3 className="mb-2 text-foreground">Hívd meg a társaidat</h3>
+              <p className="text-sm text-muted-foreground">Már van akivel bevált a közös tanulás? Mentsd el ismerősnek és hívd meg a többi csoportodba is</p>
             </button>
 
             <button
@@ -136,8 +136,8 @@ function HomePage({ onNavigate}) {
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <Calendar className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="mb-2 text-black">Események szervezése</h3>
-              <p className="text-sm text-black/70">Hozz létre eseményeket a csoportok fórum oldalain, így biztositva hogy mindenki értesül a fontos eseményekről</p>
+              <h3 className="mb-2 text-foreground">Események szervezése</h3>
+              <p className="text-sm text-muted-foreground">Hozz létre eseményeket a csoportok fórum oldalain, így biztositva hogy mindenki értesül a fontos eseményekről</p>
             </button>
           </div>
         </div>
