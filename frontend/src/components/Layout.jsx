@@ -6,6 +6,7 @@ import { SearchPage } from "./SearchPage";
 import MyGroupsPage from "./MyGroupsPage";
 import { ProfileSettingsPage } from "./ProfileSettingsPage";
 import { PomodoroPage } from "./PomodoroPage";
+import { LeaderboardPage } from "./LeaderboardPage";
 import { PomodoroProvider } from "../context/PomodoroContext";
 import LoginPage from "./LoginPage";
 import { RegisterPage } from "./RegisterPage";
@@ -177,6 +178,8 @@ export function Layout() {
         return (
           <PomodoroPage blockGroupStartDueToInvite={!!pomodoroInvite} />
         );
+      case "leaderboard":
+        return <LeaderboardPage />;
       case "profile":
         return <ProfileSettingsPage userData={userData} />;
       default:

@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   Timer,
+  Trophy,
 } from "lucide-react";
 import { XPWidget } from "./XPWidget";
 
@@ -49,6 +50,12 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
       name: "Pomodoro Timer",
       icon: Timer,
       description: "Fókuszálj a tanulásra",
+    },
+    {
+      id: "leaderboard",
+      name: "Ranglista",
+      icon: Trophy,
+      description: "Top tanulók és csoportok",
     },
     {
       id: "profile",

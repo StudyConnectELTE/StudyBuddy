@@ -553,6 +553,24 @@ const subjectService = {
 
 
 
+// LEADERBOARD SERVICE
+const leaderboardService = {
+  getIndividual: async (limit = 10) => {
+    const token = getAuthToken();
+    const response = await api.get(`/leaderboard?type=individual&limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+  getGroup: async (limit = 10) => {
+    const token = getAuthToken();
+    const response = await api.get(`/leaderboard?type=group&limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+};
+
 // GAMIFICATION SERVICE
 const gamificationService = {
   // Fetches fresh XP/level from the server and syncs localStorage
@@ -597,5 +615,6 @@ export {
   subjectService,
   pomodoroService,
   gamificationService,
+  leaderboardService,
 };
 export default authService;
