@@ -565,6 +565,17 @@ const gamificationService = {
       return null;
     }
   },
+
+  // Refreshes XP and returns how much was gained since last check.
+  // Call this after any XP-earning action to get the diff for toasts.
+  getXPGain: async () => {
+    const oldXp = authService.getUser()?.xp ?? 0;
+    const result = await gamificationService.refreshXP();
+    if (!result) return null;
+    const gained = result.xp - oldXp;
+    const leveledUp = result.level > (authService.getUser()?.level ?? 1);
+    return { gained, newXp: result.xp, newLevel: result.level, leveledUp };
+  },
 };
 
 export {
