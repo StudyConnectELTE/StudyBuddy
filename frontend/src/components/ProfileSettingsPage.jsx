@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";  // ✅ REACT ROUTER
-import { User, Mail, Phone, School, Calendar, Bell, BellOff, Lock, Eye, EyeOff, Heart, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { User, Mail, School, Calendar, Bell, BellOff, Lock, Eye, EyeOff, Heart, ArrowLeft, Star } from "lucide-react";
+import { useXP, getRankName } from "../hooks/useXP";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Card } from "./ui/card";
@@ -82,6 +83,17 @@ export function ProfileSettingsPage() {
     totalStudyHours: 0,
     hobbies: []
   };
+
+  const { xp, level, xpInCurrentLevel, xpToNextLevel, progressPercent, rankName, nextRankName } = useXP();
+
+  const rankColors = {
+    "Focus Beginner":    "bg-muted text-muted-foreground",
+    "Study Enthusiast":  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    "Focused Student":   "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+    "ELTE Focus Master": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    "Focus Legend":      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  };
+  const rankColor = rankColors[rankName] || rankColors["Focus Beginner"];
 
   const getInitials = (name) => {
     if (!name || name === "Betöltés...") return "TU";
@@ -255,6 +267,59 @@ export function ProfileSettingsPage() {
                       <span>{userData.year}. szemeszter</span>
                     </div>
                   </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Gamification — XP & Level */}
+            <Card className="p-6 border-border">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                  <Star className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3>Haladás & XP</h3>
+                  <p className="text-sm text-muted-foreground">Tanulási teljesítményed</p>
+                </div>
+              </div>
+
+              {/* Rank badge + level */}
+              <div className="flex items-center gap-3 mb-5">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${rankColor}`}>
+                  {rankName}
+                </span>
+                <span className="text-muted-foreground text-sm">· {level}. szint</span>
+              </div>
+
+              {/* XP progress bar */}
+              <div className="mb-2">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">XP haladás</span>
+                  <span className="font-medium">{xpInCurrentLevel} / 100 XP</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-700"
+                    style={{ width: `${Math.max(progressPercent, 2)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Még {xpToNextLevel} XP kell a következő szinthez
+                  {nextRankName !== rankName && ` (${nextRankName})`}
+                </p>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Összes XP</p>
+                  <p className="text-2xl font-bold text-primary">{xp}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Következő rang</p>
+                  <p className="text-sm font-medium">
+                    {nextRankName !== rankName ? nextRankName : "Maximum szint!"}
+                  </p>
                 </div>
               </div>
             </Card>

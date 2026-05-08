@@ -336,9 +336,6 @@ def start_pomodoro():
 
     db.session.commit()
 
-    # Award XP for starting a pomodoro session
-    award_xp(user_id, 'start_pomodoro')
-
     return jsonify(
         {
             "message": "Pomodoro session elindítva",
@@ -593,6 +590,14 @@ def finish_pomodoro_session(session_id):
     session.end_time = datetime.utcnow()
     db.session.commit()
 
+    # Award XP to every participant who accepted the invite
+    participants = PomodoroSessionParticipant.query.filter_by(
+        session_id=session_id,
+        invite_status="accepted"
+    ).all()
+    for p in participants:
+        award_xp(p.user_id, 'complete_pomodoro')
+
     emit_to_session(session_id, "session_finished", {
         "session_id": session_id,
         "end_time": session.end_time.isoformat(),
@@ -607,6 +612,16 @@ def finish_pomodoro_session(session_id):
         "end_time": session.end_time.isoformat(),
         "host_user_id": session.host_user_id
     }), 200
+
+
+@pomodoro_bp.route("/pomodoro/log-focus", methods=["POST"])
+def log_focus_complete():
+    """Awards XP for completing a focus phase (works for both solo and group sessions)."""
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+    award_xp(user_id, 'complete_pomodoro')
+    return jsonify({"message": "Focus session logged", "xp_awarded": 10}), 200
 
 
 @pomodoro_bp.route("/pomodoro/pending-invites", methods=["GET"])

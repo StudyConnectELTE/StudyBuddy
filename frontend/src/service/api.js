@@ -262,6 +262,17 @@ const pomodoroService = {
     return response.data;
   },
 
+  logFocusComplete: async () => {
+    const token = getAuthToken();
+    if (!token) return null;
+    const response = await api.post(
+      "/pomodoro/log-focus",
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
   getPendingInvites: async () => {
     const token = getAuthToken();
     const response = await api.get("/pomodoro/pending-invites", {
@@ -542,6 +553,60 @@ const subjectService = {
 
 
 
+// LEADERBOARD SERVICE
+const leaderboardService = {
+  getIndividual: async (limit = 10) => {
+    const token = getAuthToken();
+    const response = await api.get(`/leaderboard?type=individual&limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+  getGroup: async (limit = 10) => {
+    const token = getAuthToken();
+    const response = await api.get(`/leaderboard?type=group&limit=${limit}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+};
+
+// GAMIFICATION SERVICE
+const gamificationService = {
+  // Fetches fresh XP/level from the server and syncs localStorage
+  refreshXP: async () => {
+    const token = getAuthToken();
+    if (!token) return null;
+    try {
+      const response = await api.get("/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = response.data;
+      if (user) {
+        const current = authService.getUser() || {};
+        const updated = { ...current, xp: user.xp, level: user.level };
+        localStorage.setItem("authUser", JSON.stringify(updated));
+        window.dispatchEvent(new Event("storage"));
+        return { xp: user.xp, level: user.level };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  // Refreshes XP and returns how much was gained since last check.
+  // Call this after any XP-earning action to get the diff for toasts.
+  getXPGain: async () => {
+    const oldXp = authService.getUser()?.xp ?? 0;
+    const result = await gamificationService.refreshXP();
+    if (!result) return null;
+    const gained = result.xp - oldXp;
+    const leveledUp = result.level > (authService.getUser()?.level ?? 1);
+    return { gained, newXp: result.xp, newLevel: result.level, leveledUp };
+  },
+};
+
 export {
   authService,
   groupService,
@@ -549,5 +614,7 @@ export {
   eventService,
   subjectService,
   pomodoroService,
+  gamificationService,
+  leaderboardService,
 };
 export default authService;

@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy import func
 from models import db
 from models import User, Group, GroupMember
 from services.auth_service import verify_jwt_token
-from services.gamification_service import award_xp
+from services.gamification_service import award_xp, calculate_level
 
 groups_bp = Blueprint("groups", __name__)
 
@@ -21,6 +22,72 @@ def get_user_id():
         return None, jsonify({"error": "Érvénytelen vagy lejárt token"}), 401
 
     return decoded["user_id"], None, None
+
+
+@groups_bp.route("/leaderboard", methods=["GET"])
+def get_leaderboard():
+    """
+    Returns individual or group leaderboard.
+    Query params: type=individual|group, limit=10 (default)
+    Note: uses all-time XP since per-period tracking is not yet implemented.
+    """
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    board_type = request.args.get("type", "individual")
+    limit = min(int(request.args.get("limit", 10)), 50)
+
+    if board_type == "group":
+        rows = (
+            db.session.query(
+                Group.id,
+                Group.name,
+                func.count(GroupMember.user_id).label("member_count"),
+                func.sum(User.xp).label("total_xp"),
+            )
+            .join(GroupMember, GroupMember.group_id == Group.id)
+            .join(User, User.id == GroupMember.user_id)
+            .group_by(Group.id, Group.name)
+            .order_by(func.sum(User.xp).desc())
+            .limit(limit)
+            .all()
+        )
+        data = [
+            {
+                "rank": i + 1,
+                "group_id": r.id,
+                "name": r.name,
+                "member_count": r.member_count,
+                "xp": int(r.total_xp or 0),
+            }
+            for i, r in enumerate(rows)
+        ]
+    else:
+        rows = (
+            User.query
+            .filter(User.is_active == True)
+            .order_by(User.xp.desc())
+            .limit(limit)
+            .all()
+        )
+        data = [
+            {
+                "rank": i + 1,
+                "user_id": u.id,
+                "name": u.name,
+                "major": u.major or "",
+                "xp": u.xp,
+                "level": u.level,
+            }
+            for i, u in enumerate(rows)
+        ]
+
+    return jsonify({
+        "type": board_type,
+        "entries": data,
+        "current_user_id": user_id,
+    }), 200
 
 
 @groups_bp.route("/groups/by-subject", methods=["GET"])

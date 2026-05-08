@@ -9,6 +9,7 @@ import {
   User,
   LogOut,
   Timer,
+  Trophy,
 } from "lucide-react";
 import { cn } from "./ui/utils";
 
@@ -39,6 +40,12 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
       name: "Pomodoro Timer",
       icon: Timer,
       description: "Focus on studying",
+    },
+    {
+      id: "leaderboard",
+      name: "Ranglista",
+      icon: Trophy,
+      description: "Top tanulók és csoportok",
     },
     {
       id: "profile",
