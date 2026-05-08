@@ -10,6 +10,7 @@ import {
   LogOut,
   Timer,
 } from "lucide-react";
+import { XPWidget } from "./XPWidget";
 
 export function Sidebar({ currentPage, onPageChange, onLogout }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -174,35 +175,37 @@ export function Sidebar({ currentPage, onPageChange, onLogout }) {
           </div>
         </nav>
 
+        {/* XP Widget */}
+        <div className="pb-3">
+          <XPWidget isExpanded={isExpanded} />
+        </div>
+
         {/* Logout Button */}
-        <div className="p-4 flex justify-center">
+        <div className={cn("p-4", isExpanded ? "" : "flex justify-center")}>
           <div className="relative group">
-            <div
-              className="w-12 h-12 bg-sidebar-primary rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 cursor-pointer"
+            <button
               onClick={onLogout}
+              className={cn(
+                "transition-all duration-300 flex items-center bg-sidebar-primary shadow-lg hover:scale-105",
+                isExpanded
+                  ? "w-full px-4 py-3 justify-start rounded-xl"
+                  : "w-12 h-12 justify-center rounded-full hover:scale-110"
+              )}
             >
-              <LogOut className="w-6 h-6 text-sidebar-primary-foreground" />
-            </div>
+              <LogOut className="w-5 h-5 text-sidebar-primary-foreground flex-shrink-0" />
+              {isExpanded && (
+                <span className="ml-3 font-medium text-sm whitespace-nowrap text-sidebar-primary-foreground">
+                  Kijelentkezés
+                </span>
+              )}
+            </button>
 
             {/* Logout tooltip for collapsed state */}
             {!isExpanded && (
               <div className="absolute left-full ml-4 px-3 py-2 bg-sidebar-primary text-sidebar-primary-foreground rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 shadow-lg transform translate-x-2 group-hover:translate-x-0">
-                <div className="font-medium text-sm">Logout</div>
-                <div className="text-xs opacity-75 mt-1">Sign out of your account</div>
-                {/* Tooltip arrow */}
+                <div className="font-medium text-sm">Kijelentkezés</div>
+                <div className="text-xs opacity-75 mt-1">Kijelentkezés a fiókból</div>
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-sidebar-primary rotate-45" />
-              </div>
-            )}
-
-            {/* Logout info for expanded state */}
-            {isExpanded && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 text-center">
-                <div className="text-sidebar-foreground font-medium text-sm whitespace-nowrap">
-                  Kijelentkezés
-                </div>
-                <div className="text-sidebar-foreground/70 text-xs whitespace-nowrap">
-                  Kijelentkezés a fiókból
-                </div>
               </div>
             )}
           </div>
