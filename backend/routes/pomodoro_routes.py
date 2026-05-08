@@ -336,9 +336,6 @@ def start_pomodoro():
 
     db.session.commit()
 
-    # Award XP for starting a pomodoro session
-    award_xp(user_id, 'start_pomodoro')
-
     return jsonify(
         {
             "message": "Pomodoro session elindítva",
@@ -592,6 +589,14 @@ def finish_pomodoro_session(session_id):
     # 4) Session lezárása
     session.end_time = datetime.utcnow()
     db.session.commit()
+
+    # Award XP to every participant who accepted the invite
+    participants = PomodoroSessionParticipant.query.filter_by(
+        session_id=session_id,
+        invite_status="accepted"
+    ).all()
+    for p in participants:
+        award_xp(p.user_id, 'complete_pomodoro')
 
     emit_to_session(session_id, "session_finished", {
         "session_id": session_id,

@@ -86,8 +86,16 @@ def create_post(group_id):
 
     db.session.commit()
 
-    # Award XP for creating a post
-    award_xp(user_id, 'create_post')
+    # Post with attachment = 20 XP, text-only post = 10 XP
+    if attachments:
+        award_xp(user_id, 'file_upload')
+    else:
+        award_xp(user_id, 'create_post')
+
+    # First post bonus: +50 XP one-time if this is the user's first post
+    post_count = Post.query.filter_by(author_id=user_id, deleted_at=None).count()
+    if post_count == 1:
+        award_xp(user_id, 'first_post_bonus')
 
     return jsonify({
     "message": "Poszt létrehozva",
