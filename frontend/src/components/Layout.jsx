@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { authService, pomodoroService } from "../service/api";
 import { PomodoroInviteModal } from "./PomodoroInviteModal";
 import { useGroupSession } from "../hooks/useGroupSession";
+import PomodoroStatsPage from "./PomodoroStatsPage";
+import { FloatingPomodoroWidget } from "./FloatingPomodoroWidget";
 
 export function Layout() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -40,13 +42,13 @@ export function Layout() {
     enabled: isAuthenticated,
   });
 
-  // Initial fallback – egyszer, login után (page refresh / offline esetén)
   useEffect(() => {
     if (!isAuthenticated) {
       setPomodoroInvite(null);
       return;
     }
-    pomodoroService.getPendingInvites()
+    pomodoroService
+      .getPendingInvites()
       .then((data) => {
         const first = (data.invites || [])[0];
         if (first) setPomodoroInvite(first);
@@ -54,13 +56,12 @@ export function Layout() {
       .catch(() => {});
   }, [isAuthenticated]);
 
-  // App indításkor ellenőrizzük a localStorage-t
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const isAuth = authService.isAuthenticated();
         const user = authService.getUser();
-        
+
         if (isAuth && user) {
           setIsAuthenticated(true);
           setUserData(user);
@@ -82,49 +83,52 @@ export function Layout() {
   const handleLogin = async (email, password) => {
     try {
       setLoading(true);
-      await authService.login(email, password); // ← Nincs response!
-      
-      // API sikeres → localStorage már frissítve
+      await authService.login(email, password);
+
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
-      
+
       toast.success("Sikeres bejelentkezés!", {
-        description: "Üdvözlünk újra!"
+        description: "Üdvözlünk újra!",
       });
     } catch (error) {
       toast.error("Hibás adatok", {
-        description: error || "Ellenőrizd az emailt és jelszót"
+        description: error || "Ellenőrizd az emailt és jelszót",
       });
     } finally {
       setLoading(false);
     }
   };
-  
+
+  const getErrorMessage = (error) => {
+    if (!error) return "Ismeretlen hiba";
+
+    const data = error.response?.data;
+    if (typeof data?.message === "string") return data.message;
+    if (typeof data?.error === "string") return data.error;
+
+    if (typeof error.message === "string") return error.message;
+
+    return "Regisztráció sikertelen, próbáld újra.";
+  };
 
   const handleRegister = async (data) => {
     try {
       setLoading(true);
-      await authService.register(
-        data.email,
-        data.name,
-        data.major,
-        data.hobbies,
-        data.neptunCode,
-        data.semester
-      );
-      
-      // Regisztráció után automatikus bejelentkezés
+      await authService.register(data);
+
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
-      
+
       toast.success("Sikeres regisztráció!", {
-        description: "Bejelentkeztél!"
+        description: "Bejelentkeztél!",
       });
     } catch (error) {
+      console.error("Regisztráció hiba:", error);
       toast.error("Regisztráció sikertelen", {
-        description: error || "Próbáld újra"
+        description: getErrorMessage(error),
       });
     } finally {
       setLoading(false);
@@ -140,7 +144,6 @@ export function Layout() {
     toast.success("Sikeres kijelentkezés");
   };
 
-  // Loading állapot
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -149,17 +152,16 @@ export function Layout() {
     );
   }
 
-  // Show auth pages if not authenticated
   if (!isAuthenticated) {
     return (
       <>
         {authMode === "login" ? (
-          <LoginPage 
+          <LoginPage
             onLogin={handleLogin}
             onSwitchToRegister={() => setAuthMode("register")}
           />
         ) : (
-          <RegisterPage 
+          <RegisterPage
             onRegister={handleRegister}
             onSwitchToLogin={() => setAuthMode("login")}
           />
@@ -172,7 +174,12 @@ export function Layout() {
   const renderContent = () => {
     switch (currentPage) {
       case "home":
-        return <HomePage onNavigate={setCurrentPage} onLogout={handleLogout} />;  // ✅ 
+        return (
+          <HomePage
+            onNavigate={setCurrentPage}
+            onLogout={handleLogout}
+          />
+        );
       case "search":
         return <SearchPage />;
       case "mygroups":
@@ -183,8 +190,16 @@ export function Layout() {
         );
       case "leaderboard":
         return <LeaderboardPage />;
+      case "pomodoro-stats":
+        return <PomodoroStatsPage />;
       case "profile":
-        return <ProfileSettingsPage userData={userData} isDark={isDark} onThemeToggle={toggleTheme} />;
+        return (
+          <ProfileSettingsPage
+            userData={userData}
+            isDark={isDark}
+            onThemeToggle={toggleTheme}
+          />
+        );
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }
@@ -194,35 +209,36 @@ export function Layout() {
     <>
       <PomodoroProvider>
         <div className="flex flex-col md:flex-row h-screen bg-background">
-          {/* Mobile Navigation - Top */}
-          <MobileNav 
-            currentPage={currentPage} 
+          <MobileNav
+            currentPage={currentPage}
             onPageChange={setCurrentPage}
             onLogout={handleLogout}
           />
-          
-          {/* Desktop Sidebar - Left */}
+
           <div className="hidden md:block flex-shrink-0">
-            <Sidebar 
-              currentPage={currentPage} 
+            <Sidebar
+              currentPage={currentPage}
               onPageChange={setCurrentPage}
               onLogout={handleLogout}
+              isDark={isDark}
+              onThemeToggle={toggleTheme}
             />
           </div>
-          
+
           <main className="flex-1 overflow-auto relative">
-            {/* Theme toggle — top right */}
-            <button
-              onClick={toggleTheme}
-              title={isDark ? "Váltás világos módra" : "Váltás sötét módra"}
-              className="fixed top-4 right-14 z-40 w-12 h-12 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-lg transition-all duration-200 hover:scale-110"
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            {/* Theme toggle */}
+            {/* Lebegő mini Pomodoro timer */}
+            <FloatingPomodoroWidget
+              currentPage={currentPage}
+              isGroup={false} // ha később lesz group meta, ide jöhet
+              onOpenPomodoro={() => setCurrentPage("pomodoro")}
+            />
+
             {renderContent()}
           </main>
         </div>
       </PomodoroProvider>
+
       {pomodoroInvite && (
         <PomodoroInviteModal
           invite={pomodoroInvite}
@@ -230,7 +246,7 @@ export function Layout() {
           onNavigatePomodoro={() => setCurrentPage("pomodoro")}
         />
       )}
-      <Toaster /> {/* ← EZ KELL! */}
+      <Toaster />
     </>
   );
 }

@@ -185,3 +185,4 @@ node_modules/
 # Uploaded files
 backend/uploads/
 uploads/
+backend/entrypoint.sh

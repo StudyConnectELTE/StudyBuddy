@@ -32,7 +32,7 @@ import {
 } from "./ui/Command";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
-import { authService } from '../service/api';
+//import { authService } from '../service/api';
 
 const MAJORS = [
 'IK - autonómrendszer-informatikus',
@@ -224,21 +224,24 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
         semester,
         hobbies: Array.isArray(hobbies) ? hobbies : [],
       };
-  
-      console.log("Küldés:", userData);  // Debug
-  
-      await authService.register(userData);
-      
-      toast.success("Registration successful!", {
-        description: `Temporary password sent to ${email}!`,
-      });
-      onRegister(userData);
+    
+      console.log("Küldés:", userData);
+      await onRegister(userData);
     } catch (error) {
       console.error("Hiba:", error);
-      toast.error(error?.message || "Registration failed!");
+      toast.error(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getErrorMessage = (error) => {
+    if (!error) return "Registration failed!";
+    const data = error.response?.data;
+    if (typeof data?.message === "string") return data.message;
+    if (typeof data?.error === "string") return data.error;
+    if (typeof error.message === "string") return error.message;
+    return "Registration failed!";
   };
   
   

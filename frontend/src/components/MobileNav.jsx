@@ -10,6 +10,7 @@ import {
   LogOut,
   Timer,
   Trophy,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "./ui/utils";
 
@@ -19,27 +20,27 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
   const navigationItems = [
     {
       id: "home",
-      name: "Home",
+      name: "Kezdőlap",
       icon: Home,
-      description: "Welcome page",
+      description: "Kezdő oldal",
     },
     {
       id: "search",
-      name: "Find Groups",
+      name: "Csoport keresés",
       icon: Search,
-      description: "Search subjects",
+      description: "Tantárgyak keresése",
     },
     {
       id: "mygroups",
-      name: "My Groups",
+      name: "Saját csoportok",
       icon: Users,
-      description: "Your study groups",
+      description: "Saját tanulócsoportjaid",
     },
     {
       id: "pomodoro",
       name: "Pomodoro Timer",
       icon: Timer,
-      description: "Focus on studying",
+      description: "Fókuszálj a tanulásra",
     },
     {
       id: "leaderboard",
@@ -48,10 +49,16 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
       description: "Top tanulók és csoportok",
     },
     {
+      id: "pomodoro-stats",
+      name: "Pomodoro statisztikák",
+      icon: BarChart3,
+      description: "Havi fókusz és session adatok",
+    },
+    {
       id: "profile",
-      name: "Profile & Settings",
+      name: "Profil és Beállitások",
       icon: User,
-      description: "Account settings",
+      description: "Profil adatok és beállitások",
     },
   ];
 
@@ -60,29 +67,33 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
     setIsOpen(false);
   };
 
+  const handleLogout = () => {
+    setIsOpen(false);
+    onLogout();
+  };
+
   return (
-    <div className="md:hidden">
+    <div className="md:hidden relative z-50">
       {/* Top Bar */}
       <div className="bg-sidebar border-b border-sidebar-border/20 px-4 py-3 flex items-center justify-between shadow-lg">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-sidebar-primary rounded-full flex items-center justify-center shadow-lg">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 bg-sidebar-primary rounded-full flex items-center justify-center shadow-lg shrink-0">
             <BookOpen className="w-5 h-5 text-sidebar-primary-foreground" />
           </div>
-          <div>
-            <h2 className="text-sidebar-foreground font-semibold text-base">
+          <div className="min-w-0">
+            <h2 className="text-sidebar-foreground font-semibold text-base truncate">
               StudyConnect
             </h2>
-            <p className="text-sidebar-foreground/70 text-xs">
-              Find Your Study Group
+            <p className="text-sidebar-foreground/70 text-xs truncate">
+              Találd meg a tanulócsoportod
             </p>
           </div>
         </div>
 
-        {/* Menu Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-10 h-10 bg-sidebar-accent/50 hover:bg-sidebar-accent rounded-lg flex items-center justify-center transition-all duration-200"
+          className="w-10 h-10 bg-sidebar-accent/50 hover:bg-sidebar-accent rounded-xl flex items-center justify-center transition-all duration-200 shrink-0"
+          aria-label={isOpen ? "Menü bezárása" : "Menü megnyitása"}
         >
           {isOpen ? (
             <X className="w-5 h-5 text-sidebar-foreground" />
@@ -92,79 +103,94 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
         </button>
       </div>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Menu Content */}
-          <div className="absolute top-[73px] left-0 right-0 bg-sidebar border-b border-sidebar-border/20 shadow-2xl z-50 animate-in slide-in-from-top duration-300">
-            <div className="px-4 py-4 space-y-2">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.id;
+          {/* Floating dropdown */}
+          <div className="absolute top-[82px] left-3 right-3 z-50">
+            <div className="rounded-3xl border border-sidebar-border/30 bg-sidebar/95 shadow-2xl backdrop-blur-md overflow-hidden">
+              <div className="max-h-[70vh] overflow-y-auto scrollbar-hidden touch-pan-y">
+                <div className="p-3 space-y-2">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentPage === item.id;
 
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavigate(item.id)}
-                    className={cn(
-                      "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300",
-                      isActive
-                        ? "bg-sidebar-primary shadow-lg shadow-sidebar-primary/30"
-                        : "bg-sidebar-accent/80 hover:bg-sidebar-primary/80",
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "w-5 h-5",
-                        isActive
-                          ? "text-sidebar-primary-foreground"
-                          : "text-sidebar-accent-foreground",
-                      )}
-                    />
-                    <div className="flex-1 text-left">
-                      <div
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleNavigate(item.id)}
                         className={cn(
-                          "font-medium text-sm",
+                          "w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 text-left",
                           isActive
-                            ? "text-sidebar-primary-foreground"
-                            : "text-sidebar-accent-foreground",
+                            ? "bg-sidebar-primary shadow-lg shadow-sidebar-primary/30"
+                            : "bg-sidebar-accent/70 hover:bg-sidebar-primary/80"
                         )}
                       >
-                        {item.name}
-                      </div>
-                      {isActive && (
-                        <div className="text-xs text-sidebar-primary-foreground/70 mt-0.5">
-                          {item.description}
-                        </div>
-                      )}
-                    </div>
-                    {isActive && (
-                      <div className="w-2 h-2 bg-sidebar-primary-foreground rounded-full animate-pulse" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                        <Icon
+                          className={cn(
+                            "w-5 h-5 shrink-0",
+                            isActive
+                              ? "text-sidebar-primary-foreground"
+                              : "text-sidebar-accent-foreground"
+                          )}
+                        />
 
-            {/* User Profile */}
-            <div className="px-4 py-4 border-t border-sidebar-border/20">
-              <button
-                onClick={onLogout}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 bg-sidebar-accent/80 hover:bg-sidebar-primary/80"
-              >
-                <LogOut className="w-5 h-5 text-sidebar-accent-foreground" />
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-sidebar-accent-foreground">
-                    Logout
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={cn(
+                              "font-medium text-sm truncate",
+                              isActive
+                                ? "text-sidebar-primary-foreground"
+                                : "text-sidebar-accent-foreground"
+                            )}
+                          >
+                            {item.name}
+                          </div>
+
+                          <div
+                            className={cn(
+                              "text-xs mt-0.5 truncate",
+                              isActive
+                                ? "text-sidebar-primary-foreground/75"
+                                : "text-sidebar-accent-foreground/70"
+                            )}
+                          >
+                            {item.description}
+                          </div>
+                        </div>
+
+                        {isActive && (
+                          <div className="w-2 h-2 bg-sidebar-primary-foreground rounded-full animate-pulse shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="p-3 pt-0">
+                  <div className="border-t border-sidebar-border/20 pt-3">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 bg-sidebar-accent/70 hover:bg-sidebar-primary/80 text-left"
+                    >
+                      <LogOut className="w-5 h-5 text-sidebar-accent-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-sidebar-accent-foreground truncate">
+                          Kijelentkezés
+                        </div>
+                        <div className="text-xs text-sidebar-accent-foreground/70 mt-0.5 truncate">
+                          Kijelentkezés a fiókból
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
-              </button>
+              </div>
             </div>
           </div>
         </>
