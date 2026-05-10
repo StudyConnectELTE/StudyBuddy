@@ -29,14 +29,15 @@ services:
         condition: service_healthy
     environment:
       FLASK_ENV: development
-      FLASK_DEBUG: "1"
+      FLASK_DEBUG: "0"
       DATABASE_URL: mysql+pymysql://user:password@db:3306/studybuddy
       FLASK_APP: app.py
       TANREND_API_URL: "http://elte_tanrend_api:3001"
       PYTHONPATH: /app
+      #BREVO_API_KEY: ${BREVO_API_KEY}
     #command: ["sh", "-c", "/app/entrypoint.sh"]  # Hot reload
-    env_file:
-    - ./backend/.env  # ← RESEND kulcs ide!
+    #env_file:
+    #- ./backend/.env  # ← RESEND kulcs ide!
 
 
   frontend:
@@ -53,6 +54,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - NODE_ENV=development
+      - BREVO_API_KEY=${BREVO_API_KEY}
     stdin_open: true
     tty: true
     depends_on:

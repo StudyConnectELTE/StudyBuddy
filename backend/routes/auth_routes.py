@@ -10,11 +10,11 @@ from config import Config
 import re
 import os
 import requests
-
+from sqlalchemy.exc import IntegrityError
 
 auth_bp = Blueprint("auth", __name__)
 
-@auth_bp.route("/register", methods=["POST"])
+@auth_bp.route("/register", methods=["POST", "OPTIONS"])
 def register():
     
     if request.method == "OPTIONS":
@@ -51,6 +51,16 @@ def register():
     ok, msg = validate_secondary_email(email, secondary)
     if not ok:
         return jsonify({"message": msg}), 400
+    
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"message": "Ez az email cím már regisztrálva van!"}), 400
+
+    if neptun:
+        existing_neptun = User.query.filter_by(neptun_code=neptun).first()
+        if existing_neptun:
+            return jsonify({"message": "Ez a Neptun kód már használatban van!"}), 400
+
 
     temp_pw = generate_temp_password()
     pw_hash = bcrypt.hashpw(temp_pw.encode(), bcrypt.gensalt()).decode()
@@ -65,8 +75,12 @@ def register():
         neptun_code=neptun,
         current_semester=semester
     )
-    db.session.add(user)
-    db.session.commit()
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"message": "Regisztrációs hiba: az adatok már használatban vannak!"}), 400
 
     # Award XP for registration
     award_xp(user.id, 'registration')

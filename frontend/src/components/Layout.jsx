@@ -102,33 +102,10 @@ export function Layout() {
   };
   
 
-  const handleRegister = async (data) => {
-    try {
-      setLoading(true);
-      await authService.register(
-        data.email,
-        data.name,
-        data.major,
-        data.hobbies,
-        data.neptunCode,
-        data.semester
-      );
-      
-      // Regisztráció után automatikus bejelentkezés
-      setIsAuthenticated(true);
-      setAuthMode(null);
-      setUserData(authService.getUser());
-      
-      toast.success("Sikeres regisztráció!", {
-        description: "Bejelentkeztél!"
-      });
-    } catch (error) {
-      toast.error("Regisztráció sikertelen", {
-        description: error || "Próbáld újra"
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleRegister = () => {
+    setIsAuthenticated(true);
+    setAuthMode(null);
+    setUserData(authService.getUser());
   };
 
   const handleLogout = () => {

@@ -179,23 +179,16 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
 
   const validateSecondaryEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    if (!emailRegex.test(email)) {
-      setEmailError('Érvénytelen email formátum');
-      return false;
-    }
-    
-    if (email.endsWith("@inf.elte.hu") || email.endsWith("@student.hu")) {
-      setEmailError('Másodlagos NEM lehet ELTE cím!');
-      return false;
-    }
-    
-    setEmailError('');
-    return true;
+    if (!emailRegex.test(email)) return "Érvénytelen email formátum";
+    if (email.endsWith("@inf.elte.hu") || email.endsWith("@student.hu"))
+      return "Másodlagos NEM lehet ELTE cím!";
+    return "";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return; // védelem duplikált kattintás ellen
+    setIsLoading(true);
   
     if (!name || !email || !major || !neptuneCode || !semester) {
       toast.error("Please fill in all fields");
@@ -232,10 +225,14 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
       toast.success("Registration successful!", {
         description: `Temporary password sent to ${email}!`,
       });
-      onRegister(userData);
+      onRegister();
     } catch (error) {
-      console.error("Hiba:", error);
-      toast.error(error?.message || "Registration failed!");
+      console.error(error);
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Registration failed!";
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -329,7 +326,7 @@ export function RegisterPage({ onRegister, onSwitchToLogin }) {
                 value={secondaryEmail}
                 onChange={(e) => {
                   setSecondaryEmail(e.target.value);
-                  validateSecondaryEmail(e.target.value);
+                  //validateSecondaryEmail(e.target.value);
                 }}
                 className="pl-10"
                 required
