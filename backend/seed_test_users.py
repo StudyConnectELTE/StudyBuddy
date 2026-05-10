@@ -38,7 +38,7 @@ SEEDS = [
 
 
 def main():
-    app = create_app()
+    app, _ = create_app()
     pw_hash = bcrypt.hashpw(PASSWORD.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     with app.app_context():

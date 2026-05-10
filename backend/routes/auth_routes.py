@@ -5,6 +5,7 @@ from models import User
 from services.auth_service import create_jwt_token, generate_temp_password,  verify_jwt_token
 from services.validators import validate_secondary_email
 from services.email_service import send_registration_email
+from services.gamification_service import award_xp
 from config import Config
 import re
 import os
@@ -67,6 +68,9 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Award XP for registration
+    award_xp(user.id, 'registration')
+
     send_registration_email(secondary, name, temp_pw)
 
     return jsonify({
@@ -76,7 +80,9 @@ def register():
             "name": user.name,
             "major": user.major,
             "hobbies": user.hobbies,
-            "secondary_email": user.secondary_email
+            "secondary_email": user.secondary_email,
+            "xp": user.xp,
+            "level": user.level
         },
         "token": create_jwt_token(user.id)
     }), 201
@@ -108,7 +114,9 @@ def login():
             "hobbies": user.hobbies,
             "neptun_code": user.neptun_code,
             "secondary_email": user.secondary_email,
-            "current_semester": user.current_semester
+            "current_semester": user.current_semester,
+            "xp": user.xp,
+            "level": user.level
         },
         "message": "Sikeres bejelentkezés!", 
         "token": token,

@@ -7,13 +7,21 @@ from flask_migrate import Migrate
 import os  # ← FONTOS: LEGFELÜL!
 from config import Config
 from models import db
-#from routes.auth_routes import auth_bp
 from routes.auth_routes import auth_bp
 from routes.groups_routes import groups_bp
 from routes.subjects_routes import subjects_bp
 from routes.profile_routes import profile_bp
 from routes.posts_routes import posts_bp
 from routes.pomodoro_routes import pomodoro_bp
+
+# Try to import SocketIO, fallback if not available
+try:
+    from flask_socketio import SocketIO
+    SOCKETIO_AVAILABLE = True
+except ImportError:
+    print("WARNING: Flask-SocketIO not available, WebSocket features disabled")
+    SocketIO = None
+    SOCKETIO_AVAILABLE = False
 
 
 def create_app():
@@ -40,6 +48,18 @@ def create_app():
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
          allow_headers=["Content-Type", "Authorization"],
          supports_credentials=True)
+
+    # 4.5 SOCKETIO - WebSocket támogatás (csak ha elérhető)
+    socketio = None
+    if SOCKETIO_AVAILABLE:
+        socketio = SocketIO(
+            app,
+            cors_allowed_origins=["http://localhost:3000", "http://localhost:5173", "https://elte-frontend-5bnk.vercel.app"],
+            ping_timeout=60,
+            ping_interval=25
+        )
+    else:
+        print("WebSocket support disabled - Flask-SocketIO not available")
 
     # 5. ERROR HANDLER-ek
     @app.errorhandler(HTTPException)
@@ -109,15 +129,30 @@ def create_app():
     app.register_blueprint(profile_bp)
     app.register_blueprint(posts_bp)
     app.register_blueprint(pomodoro_bp)
+    
+    # 9.5 WebSocket Namespace regisztrálása (csak ha elérhető)
+    if socketio and SOCKETIO_AVAILABLE:
+        try:
+            from routes.pomodoro_routes import register_socketio
+            register_socketio(socketio)
+        except ImportError as e:
+            print(f"WebSocket registration failed: {e}")
     #register(app)
 
     # 10. DB LÉTREHOZÁS (FEJLESZTÉSI)
     with app.app_context():
         db.create_all()
 
-    return app
+    # Store socketio in app for access (if available)
+    if socketio:
+        app.socketio = socketio
+    
+    return app, socketio
 
 if __name__ == "__main__":    
-    app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app, socketio = create_app()
+    if socketio and SOCKETIO_AVAILABLE:
+        socketio.run(app, host="0.0.0.0", port=5000, debug=True, allow_unsafe_werkzeug=True)
+    else:
+        app.run(host="0.0.0.0", port=5000, debug=True)
     

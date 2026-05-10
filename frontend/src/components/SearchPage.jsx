@@ -10,8 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/Dialog";
-import { subjectService, groupService } from "../service/api";
+import { subjectService, groupService, gamificationService } from "../service/api";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -100,6 +101,19 @@ export function SearchPage() {
 
     try {
       await groupService.joinGroup(groupId);
+
+      // Refresh XP and show gain toast
+      const xpResult = await gamificationService.getXPGain();
+      if (xpResult && xpResult.gained > 0) {
+        toast.success(`+${xpResult.gained} XP`, {
+          description: "Csoporthoz csatlakoztál!",
+        });
+        if (xpResult.leveledUp) {
+          toast.success(`Szint növekedés! ${xpResult.newLevel}. szint`, {
+            description: "Gratulálunk!",
+          });
+        }
+      }
 
       if (selectedSubject) {
         const response = await groupService.searchGroups(selectedSubject.name);
