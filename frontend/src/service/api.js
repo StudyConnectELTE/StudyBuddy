@@ -320,6 +320,40 @@ const pomodoroService = {
     return response.data;
   },
 
+  updateSessionCycle: async (sessionId, cycleCount) => {
+    const token = getAuthToken();
+    const response = await api.patch(
+      `/pomodoro/session/${sessionId}/cycle`,
+      { cycle_count: cycleCount },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
+
+  getSettings: async () => {
+    const token = getAuthToken();
+    const response = await api.get("/pomodoro/settings", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+  
+  saveSettings: async (body) => {
+    const token = getAuthToken();
+    const response = await api.put("/pomodoro/settings", body, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
   acceptInvite: async (sessionId) => {
     const token = getAuthToken();
     const response = await api.post(
