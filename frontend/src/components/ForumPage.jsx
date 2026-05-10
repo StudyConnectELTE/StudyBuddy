@@ -29,7 +29,8 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import Calendar from "./ui/calendar";
-import { forumService, eventService, groupService, authService } from "../service/api";
+import { forumService, eventService, groupService, authService, gamificationService } from "../service/api";
+import { toast as sonnerToast } from "sonner";
 
 // Toast notification
 const Toast = ({ message, type = "error", onClose }) => (
@@ -607,6 +608,17 @@ const ForumPage = ({
       setNewPostContent("");
       setNewPostFiles([]);
       showToast("Poszt sikeresen létrehozva!", "success");
+
+      // XP refresh + toast
+      const xpResult = await gamificationService.getXPGain();
+      if (xpResult && xpResult.gained > 0) {
+        sonnerToast.success(`+${xpResult.gained} XP`, {
+          description: newPostFiles.length > 0 ? "Fájlt töltöttél fel!" : "Posztot írtál!",
+        });
+        if (xpResult.leveledUp) {
+          sonnerToast.success(`Szint növekedés! ${xpResult.newLevel}. szint`, { description: "Gratulálunk!" });
+        }
+      }
     } catch (error) {
       console.error("❌ POST HIBA:", error.response?.data || error);
       showToast(`Hiba: ${error.response?.data?.error || error.message || 'Ismeretlen hiba'}`, "error");
@@ -719,6 +731,15 @@ const ForumPage = ({
       setCommentContent(prev => ({ ...prev, [postId]: "" }));
       setCommentFiles(prev => ({ ...prev, [postId]: [] }));
       showToast("Komment elküldve!", "success");
+
+      // XP refresh + toast
+      const xpResult = await gamificationService.getXPGain();
+      if (xpResult && xpResult.gained > 0) {
+        sonnerToast.success(`+${xpResult.gained} XP`, { description: "Kommentet írtál!" });
+        if (xpResult.leveledUp) {
+          sonnerToast.success(`Szint növekedés! ${xpResult.newLevel}. szint`, { description: "Gratulálunk!" });
+        }
+      }
     } catch (error) {
       console.error("Error creating comment:", error);
       showToast("Komment küldése sikertelen");

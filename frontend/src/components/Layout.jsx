@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 import { Sidebar } from "./SideBar";
 import { MobileNav } from "./MobileNav";
 import HomePage from "./HomePage";
@@ -6,6 +8,7 @@ import { SearchPage } from "./SearchPage";
 import MyGroupsPage from "./MyGroupsPage";
 import { ProfileSettingsPage } from "./ProfileSettingsPage";
 import { PomodoroPage } from "./PomodoroPage";
+import { LeaderboardPage } from "./LeaderboardPage";
 import { PomodoroProvider } from "../context/PomodoroContext";
 import LoginPage from "./LoginPage";
 import { RegisterPage } from "./RegisterPage";
@@ -13,59 +16,43 @@ import { Toaster } from "./ui/sonner";
 import { toast } from "sonner";
 import { authService, pomodoroService } from "../service/api";
 import { PomodoroInviteModal } from "./PomodoroInviteModal";
+import { useGroupSession } from "../hooks/useGroupSession";
 
 export function Layout() {
+  const { isDark, toggle: toggleTheme } = useTheme();
   const [currentPage, setCurrentPage] = useState("home");
   const [authMode, setAuthMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pomodoroInvite, setPomodoroInvite] = useState(null);
-  /** 401 esetén leáll (lejárt/hibás token), ne spammelje a backendet */
-  const [pomodoroInvitePollStopped, setPomodoroInvitePollStopped] =
-    useState(false);
 
   const closePomodoroInvite = useCallback(() => setPomodoroInvite(null), []);
 
+  const handleInviteReceived = useCallback((invite) => {
+    setPomodoroInvite((prev) => prev ?? invite);
+  }, []);
+
+  useGroupSession({
+    backendSessionId: null,
+    onInviteReceived: handleInviteReceived,
+    onSessionFinished: null,
+    enabled: isAuthenticated,
+  });
+
+  // Initial fallback – egyszer, login után (page refresh / offline esetén)
   useEffect(() => {
     if (!isAuthenticated) {
       setPomodoroInvite(null);
-      setPomodoroInvitePollStopped(false);
+      return;
     }
+    pomodoroService.getPendingInvites()
+      .then((data) => {
+        const first = (data.invites || [])[0];
+        if (first) setPomodoroInvite(first);
+      })
+      .catch(() => {});
   }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated || pomodoroInvitePollStopped) return;
-    if (!localStorage.getItem("authToken")) return;
-
-    let cancelled = false;
-    const tick = async () => {
-      if (!localStorage.getItem("authToken")) return;
-      try {
-        const data = await pomodoroService.getPendingInvites();
-        if (cancelled) return;
-        const invites = data.invites || [];
-        setPomodoroInvite((prev) => {
-          if (prev) {
-            const still = invites.find((i) => i.session_id === prev.session_id);
-            return still ?? null;
-          }
-          return invites[0] ?? null;
-        });
-      } catch (err) {
-        if (err?.response?.status === 401) {
-          setPomodoroInvitePollStopped(true);
-          setPomodoroInvite(null);
-        }
-      }
-    };
-    tick();
-    const id = setInterval(tick, 2000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [isAuthenticated, pomodoroInvitePollStopped]);
 
   // App indításkor ellenőrizzük a localStorage-t
   useEffect(() => {
@@ -101,7 +88,6 @@ export function Layout() {
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
-      setPomodoroInvitePollStopped(false);
       
       toast.success("Sikeres bejelentkezés!", {
         description: "Üdvözlünk újra!"
@@ -138,6 +124,7 @@ export function Layout() {
       setIsAuthenticated(true);
       setAuthMode(null);
       setUserData(authService.getUser());
+      
       setPomodoroInvitePollStopped(false);
   
       toast.success("Sikeres regisztráció!", {
@@ -203,8 +190,10 @@ export function Layout() {
         return (
           <PomodoroPage blockGroupStartDueToInvite={!!pomodoroInvite} />
         );
+      case "leaderboard":
+        return <LeaderboardPage />;
       case "profile":
-        return <ProfileSettingsPage userData={userData} />;
+        return <ProfileSettingsPage userData={userData} isDark={isDark} onThemeToggle={toggleTheme} />;
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }
@@ -230,7 +219,15 @@ export function Layout() {
             />
           </div>
           
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto relative">
+            {/* Theme toggle — top right */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Váltás világos módra" : "Váltás sötét módra"}
+              className="fixed top-4 right-14 z-40 w-12 h-12 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-lg transition-all duration-200 hover:scale-110"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             {renderContent()}
           </main>
         </div>

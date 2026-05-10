@@ -8,8 +8,10 @@ import {
   authService,
   groupService,
   pomodoroService,
+  gamificationService,
   getApiErrorMessage,
 } from "../service/api";
+import { useGroupSession } from "../hooks/useGroupSession";
 
 function formatTime(seconds) {
   if (seconds == null || seconds < 0) return "25:00";
@@ -190,38 +192,57 @@ export function PomodoroPage({ blockGroupStartDueToInvite = false }) {
     };
   }, [isGroupSession, showSessionSetup, isLoggedIn]);
 
+  const prevModeRef = useRef(null);
+  useEffect(() => {
+    const wasJustFocus = prevModeRef.current === MODES.FOCUS;
+    const nowNotFocus = mode !== MODES.FOCUS;
+    const sessionActive = !showSessionSetup;
+
+    if (wasJustFocus && nowNotFocus && sessionActive && isLoggedIn) {
+      // A focus phase just completed — log XP (works for both solo and group)
+      pomodoroService.logFocusComplete()
+        .then(() => gamificationService.getXPGain())
+        .then((xpResult) => {
+          if (xpResult && xpResult.gained > 0) {
+            toast.success(`+${xpResult.gained} XP`, {
+              description: "Fókusz session befejezve!",
+            });
+            if (xpResult.leveledUp) {
+              toast.success(`Szint növekedés! ${xpResult.newLevel}. szint`, {
+                description: "Gratulálunk!",
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    }
+    prevModeRef.current = mode;
+  }, [mode, showSessionSetup, isLoggedIn, MODES.FOCUS]);
+
+  const { participants: wsParticipants, emitLeaveSession } = useGroupSession({
+    backendSessionId: showSessionSetup ? null : backendSessionId,
+    onSessionFinished: () => {
+      toast.message("A csoportos session a szerveren lezárult.");
+      setBackendSessionId(null);
+      localStorage.removeItem("pomodoroGroupSessionId");
+      reset();
+      setShowSessionSetup(true);
+    },
+    onInviteReceived: null,
+  });
+
   useEffect(() => {
     if (!backendSessionId || showSessionSetup) {
       setSessionSnapshot(null);
       return;
     }
-    const id = backendSessionId;
-    let cancelled = false;
-    const fetchSession = async () => {
-      try {
-        const s = await pomodoroService.getSession(id);
-        if (cancelled) return;
-        setSessionSnapshot(s);
-        if (s.end_time) {
-          toast.message("A csoportos session a szerveren lezárult.");
-          setBackendSessionId(null);
-          localStorage.removeItem("pomodoroGroupSessionId");
-        }
-      } catch {
-        /* poll csendben újra */
-      }
-    };
-    fetchSession();
-    const t = setInterval(fetchSession, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
-  }, [backendSessionId, showSessionSetup]);
+    setSessionSnapshot({ participants: wsParticipants });
+  }, [wsParticipants, backendSessionId, showSessionSetup]);
 
   const clearGroupBackendSession = async () => {
     const id = backendSessionId;
     if (!id) return;
+    emitLeaveSession();
     try {
       await pomodoroService.leaveSession(id);
     } catch {
