@@ -19,6 +19,7 @@ import { PomodoroInviteModal } from "./PomodoroInviteModal";
 import { useGroupSession } from "../hooks/useGroupSession";
 import PomodoroStatsPage from "./PomodoroStatsPage";
 import { FloatingPomodoroWidget } from "./FloatingPomodoroWidget";
+import { FlashCardBoard } from "./FlashCardBoard";
 
 export function Layout() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -200,6 +201,8 @@ export function Layout() {
             onThemeToggle={toggleTheme}
           />
         );
+      case "flashcards":
+        return <FlashCardBoard />;
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }
