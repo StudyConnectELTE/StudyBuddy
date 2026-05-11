@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -11,42 +11,43 @@ import {
   DialogTrigger,
 } from "./ui/Dialog";
 import { FlashCardDeck } from "./FlashCardDeck";
-import { toast } from "sonner"; // ← toast importálása
+import { flashcardService } from "../service/api";
+import { toast } from "sonner";
 
 export function FlashCardBoard() {
   const navigate = useNavigate();
-
-  const [decks, setDecks] = useState([
-    {
-      id: 1,
-      name: "Analízis – definíciók",
-      description: "Alapfogalmak a vizsgára",
-      subject: "Analízis 1",
-      color: "#3b82f6",
-      cardCount: 15,
-    },
-    {
-      id: 2,
-      name: "Számítógép-hálózatok",
-      description: "TCP/IP, OSI modell, protokollok",
-      subject: "Hálózatok",
-      color: "#10b981",
-      cardCount: 8,
-    },
-  ]);
 
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newColor, setNewColor] = useState("#3b82f6");
 
-  const [dialogOpen, setDialogOpen] = useState(false); // ← dialog állapot
+  const [dialogOpen, setDialogOpen] = useState(false);
 
+  const [decks, setDecks] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadDecks = async () => {
+      setLoading(true);
+      try {
+        const data = await flashcardService.getDecks();
+        setDecks(data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Nem sikerült betölteni a paklikat.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDecks();
+  }, []);
   const handleGoHome = () => {
     navigate("/");
   };
 
-  const handleCreateDeck = () => {
+  const handleCreateDeck = async () => {
     if (!newName.trim()) {
       toast.error("A pakli neve kötelező.");
       return;
@@ -55,33 +56,26 @@ export function FlashCardBoard() {
       toast.error("A tantárgy kötelező.");
       return;
     }
-
+  
     try {
-      const newDeck = {
-        id: Date.now(),
+      const created = await flashcardService.createDeck({
         name: newName.trim(),
-        description: newDescription.trim() || null,
         subject: newSubject.trim(),
+        description: newDescription.trim() || null,
         color: newColor,
-        cardCount: 0, // új pakli, még nincsenek kártyák
-      };
-
-      setDecks((prev) => [newDeck, ...prev]);
+      });
+  
       
-      // Form reset
+      setDecks((prev) => [created, ...prev]);
       setNewName("");
       setNewDescription("");
       setNewSubject("");
       setNewColor("#3b82f6");
-
-      // Dialog bezárása
       setDialogOpen(false);
-
-      // Sikeres toast
       toast.success("Pakli sikeresen létrehozva!");
-    } catch (error) {
-      toast.error("Hiba történt a pakli létrehozása során.");
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      toast.error("Nem sikerült létrehozni a paklit.");
     }
   };
 
@@ -115,7 +109,7 @@ export function FlashCardBoard() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="mb-4">FlashCard paklijaid</h1>
+          <h1 className="mb-2 text-3xl font-bold tracking-tight">FlashCard paklik</h1>
           <p className="text-muted-foreground">
             Hozz létre kártyapaklikat a tantárgyaidhoz, és gyakorolj aktív ismétléssel.
           </p>
@@ -165,23 +159,23 @@ export function FlashCardBoard() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Leírás (opcionális)
-                  </label>
-                  <Input
-                    value={newDescription}
-                    onChange={(e) => setNewDescription(e.target.value)}
-                    placeholder="Rövid leírás a paklihoz"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
                     Tantárgy *
                   </label>
                   <Input
                     value={newSubject}
                     onChange={(e) => setNewSubject(e.target.value)}
                     placeholder="Pl. Analízis 1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Leírás (opcionális)
+                  </label>
+                  <Input
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="Rövid leírás a paklihoz"
                   />
                 </div>
 
@@ -215,8 +209,8 @@ export function FlashCardBoard() {
                   <Button
                     onClick={handleCreateDeck}
                     className="
-                      bg-gradient-to-r from-[#012851] to-[#3b82f6]
-                      hover:from-[#012851]/90 hover:to-[#3b82f6]/90
+                      bg-gradient-to-r bg-[#012851]
+                      hover-[#012851]/90
                       text-white
                     "
                   >

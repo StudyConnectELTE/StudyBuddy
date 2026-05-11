@@ -13,6 +13,7 @@ from routes.subjects_routes import subjects_bp
 from routes.profile_routes import profile_bp
 from routes.posts_routes import posts_bp
 from routes.pomodoro_routes import pomodoro_bp
+from routes.flashcards_routes import flashcards_bp
 
 # Try to import SocketIO, fallback if not available
 try:
@@ -129,6 +130,7 @@ def create_app():
     app.register_blueprint(profile_bp)
     app.register_blueprint(posts_bp)
     app.register_blueprint(pomodoro_bp)
+    app.register_blueprint(flashcards_bp)
     
     # 9.5 WebSocket Namespace regisztrálása (csak ha elérhető)
     if socketio and SOCKETIO_AVAILABLE:
