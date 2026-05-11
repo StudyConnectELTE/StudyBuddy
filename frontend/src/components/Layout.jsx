@@ -20,6 +20,7 @@ import { useGroupSession } from "../hooks/useGroupSession";
 import PomodoroStatsPage from "./PomodoroStatsPage";
 import { FloatingPomodoroWidget } from "./FloatingPomodoroWidget";
 import { FlashCardBoard } from "./FlashCardBoard";
+import { FlashCardStudy } from "./FlashCardStudy";
 
 export function Layout() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -29,6 +30,7 @@ export function Layout() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pomodoroInvite, setPomodoroInvite] = useState(null);
+  const [selectedDeckId, setSelectedDeckId] = useState(null);
 
   const closePomodoroInvite = useCallback(() => setPomodoroInvite(null), []);
 
@@ -202,7 +204,26 @@ export function Layout() {
           />
         );
       case "flashcards":
-        return <FlashCardBoard />;
+        return (
+          <FlashCardBoard
+            onOpenDeck={(deckId) => {
+              setSelectedDeckId(deckId);
+              setCurrentPage("flashcards-study");
+            }}
+          />
+        );
+      case "flashcards-study":
+        return (
+          <FlashCardStudy
+            deckId={selectedDeckId}
+            onBackToDecks={() => setCurrentPage("flashcards")}
+            onEditDeck={(deckId) => {
+              console.log("Edit deck", deckId);
+              // ide jön majd a szerkesztő oldalra váltás, pl:
+              // setCurrentPage("flashcards-edit");
+            }}
+          />
+        );
       default:
         return <HomePage onNavigate={setCurrentPage} />;
     }

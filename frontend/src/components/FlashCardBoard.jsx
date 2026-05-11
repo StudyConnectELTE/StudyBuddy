@@ -14,7 +14,7 @@ import { FlashCardDeck } from "./FlashCardDeck";
 import { flashcardService } from "../service/api";
 import { toast } from "sonner";
 
-export function FlashCardBoard() {
+export function FlashCardBoard({ onOpenDeck }) {
   const navigate = useNavigate();
 
   const [newName, setNewName] = useState("");
@@ -224,18 +224,19 @@ export function FlashCardBoard() {
           {/* Meglévő paklik */}
           {decks.map((deck) => (
             <FlashCardDeck
-              key={deck.id}
-              name={deck.name}
-              description={deck.description}
-              subject={deck.subject}
-              color={deck.color}
-              cardCount={deck.cardCount}
-              onClick={() => {
-                console.log("Study deck", deck.id);
-                // navigate(`/flashcards/decks/${deck.id}/study`);
-              }}
+            key={deck.id}
+            name={deck.name}
+            description={deck.description}
+            subject={deck.subject}
+            color={deck.color}
+            cardCount={deck.cardCount}
+            onClick={() => {
+                if (onOpenDeck) {
+                onOpenDeck(deck.id);
+                }
+            }}
             />
-          ))}
+        ))}
 
           {decks.length === 0 && (
             <div className="col-span-full text-center py-16 text-muted-foreground">
