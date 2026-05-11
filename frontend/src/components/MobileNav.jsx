@@ -11,6 +11,7 @@ import {
   Timer,
   Trophy,
   BarChart3,
+  BookCheck,
 } from "lucide-react";
 import { cn } from "./ui/utils";
 
@@ -41,6 +42,12 @@ export function MobileNav({ currentPage, onPageChange, onLogout }) {
       name: "Pomodoro Timer",
       icon: Timer,
       description: "Fókuszálj a tanulásra",
+    },
+    {
+      id: "flashcards",
+      name: "FlashCard tanulás",
+      icon: BookCheck,
+      description: "FlashCard a hatékony tanuláshoz",
     },
     {
       id: "leaderboard",

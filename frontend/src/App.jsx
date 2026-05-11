@@ -16,7 +16,6 @@ export default function App() {
   return (
     <Router>  {/* ← EZ KELL! */}
       <Layout />
-      
     </Router>
   );
 }

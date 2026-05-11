@@ -270,3 +270,82 @@ class PomodoroSessionParticipant(db.Model):
     def __repr__(self):
         return f"<PomodoroSessionParticipant Session:{self.session_id} User:{self.user_id}>"
     
+class CardPack(db.Model):
+    __tablename__ = "card_packs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                        nullable=False, index=True)
+
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    subject = db.Column(db.String(100), nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    color = db.Column(db.String(20), nullable=True)
+
+    # kapcsolatok
+    user = db.relationship("User", backref="card_packs")
+    flashcards = db.relationship(
+        "FlashCard",
+        backref="pack",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<CardPack {self.name}>"
+    
+class FlashCard(db.Model):
+    __tablename__ = "flashcards"
+
+    id = db.Column(db.Integer, primary_key=True)
+    pack_id = db.Column(db.Integer, db.ForeignKey("card_packs.id"),
+                        nullable=False, index=True)
+
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=False)
+
+    hint = db.Column(db.Text, nullable=True)
+    order_index = db.Column(db.Integer, nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self):
+        return f"<FlashCard {self.id} in pack {self.pack_id}>"
+    
+class FlashcardReview(db.Model):
+    __tablename__ = "flashcard_reviews"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                        nullable=False, index=True)
+    flashcard_id = db.Column(db.Integer, db.ForeignKey("flashcards.id"),
+                             nullable=False, index=True)
+
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_correct = db.Column(db.Boolean, nullable=False)
+
+    # opcionális extra mezők:
+    response_time_ms = db.Column(db.Integer, nullable=True)
+    rating = db.Column(db.Integer, nullable=True)  # 0-5, ha akarsz ilyen skálát
+
+    user = db.relationship("User", backref="flashcard_reviews")
+    flashcard = db.relationship("FlashCard", backref="reviews")
+
+    def __repr__(self):
+        return f"<FlashcardReview user={self.user_id} card={self.flashcard_id}>"
+    

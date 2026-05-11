@@ -13,6 +13,7 @@ import {
   BarChart3,
   Moon,
   Sun,
+  BookCheck
 } from "lucide-react";
 import { XPWidget } from "./XPWidget";
 
@@ -70,6 +71,12 @@ export function Sidebar({
       name: "Pomodoro statisztikák",
       icon: BarChart3,
       description: "Havi fókusz és session adatok",
+    },
+    {
+      id: "flashcards",
+      name: "FlashCard tanulás",
+      icon: BookCheck,
+      description: "FlashCard a hatékony tanuláshoz",
     },
     {
       id: "profile",

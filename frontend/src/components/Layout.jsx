@@ -19,6 +19,9 @@ import { PomodoroInviteModal } from "./PomodoroInviteModal";
 import { useGroupSession } from "../hooks/useGroupSession";
 import PomodoroStatsPage from "./PomodoroStatsPage";
 import { FloatingPomodoroWidget } from "./FloatingPomodoroWidget";
+import { FlashCardBoard } from "./FlashCardBoard";
+import { FlashCardStudy } from "./FlashCardStudy";
+import { FlashCardEdit } from "./FlashCardEdit";
 
 export function Layout() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -28,6 +31,7 @@ export function Layout() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pomodoroInvite, setPomodoroInvite] = useState(null);
+  const [selectedDeck, setSelectedDeck] = useState(null);
 
   const closePomodoroInvite = useCallback(() => setPomodoroInvite(null), []);
 
@@ -198,6 +202,34 @@ export function Layout() {
             userData={userData}
             isDark={isDark}
             onThemeToggle={toggleTheme}
+          />
+        );
+      case "flashcards":
+        return (
+          <FlashCardBoard
+            onOpenDeck={(deck) => {
+              setSelectedDeck(deck);
+              setCurrentPage("flashcards-study");
+            }}
+          />
+        );
+      case "flashcards-study":
+        return (
+          <FlashCardStudy
+            deckId={selectedDeck?.id}
+            deckColor={selectedDeck?.color}
+            onBackToDecks={() => setCurrentPage("flashcards")}
+            onEditDeck={() => {
+              setCurrentPage("flashcards-edit");
+            }}
+          />
+        );
+      case "flashcards-edit":
+        return (
+          <FlashCardEdit
+            deckId={selectedDeck?.id}
+            onBackToStudy={() => setCurrentPage("flashcards-study")}
+            onBackToDecks={() => setCurrentPage("flashcards")}
           />
         );
       default:

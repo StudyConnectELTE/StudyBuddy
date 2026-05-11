@@ -679,6 +679,82 @@ const gamificationService = {
   },
 };
 
+const flashcardService = {
+  // Aktuális user paklijainak listázása
+  getDecks: async () => {
+    const token = getAuthToken();
+    const response = await api.get("/flashcards/decks", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data; // [{ id, name, subject, description, color, cardCount, ...}, ...]
+  },
+
+  // Új pakli létrehozása
+  createDeck: async ({ name, subject, description, color }) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      "/flashcards/decks",
+      { name, subject, description, color },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data; // { id, name, subject, description, color, cardCount, ... }
+  },
+
+  // Egy pakli kártyáinak lekérése
+  getCards: async (deckId) => {
+    const token = getAuthToken();
+    const response = await api.get(`/flashcards/decks/${deckId}/cards`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data; // [{ id, question, answer }, ...]
+  },
+
+  // Új kártya létrehozása pakliban
+  createCard: async (deckId, { question, answer }) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/flashcards/decks/${deckId}/cards`,
+      { question, answer },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data; // { id, question, answer }
+  },
+
+  // Kártya törlése
+  deleteCard: async (cardId) => {
+    const token = getAuthToken();
+    const response = await api.delete(`/flashcards/cards/${cardId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  deleteDeck: async (deckId) => {
+    const token = getAuthToken();
+    const response = await api.delete(`/flashcards/decks/${deckId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+};
+
 export {
   authService,
   groupService,
@@ -688,6 +764,7 @@ export {
   pomodoroService,
   gamificationService,
   leaderboardService,
+  flashcardService
 };
 
 export default authService;
