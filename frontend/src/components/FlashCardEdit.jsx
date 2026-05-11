@@ -34,6 +34,24 @@ export function FlashCardEdit({ deckId, onBackToStudy, onBackToDecks }) {
     }
   }, [deckId]);
 
+  const handleDeleteDeck = async () => {
+    const confirmed = window.confirm(
+      "Biztosan törlöd ezt a paklit? A pakli összes kártyája is törlődik."
+    );
+    if (!confirmed) return;
+  
+    try {
+      await flashcardService.deleteDeck(deckId);
+      toast.success("Pakli törölve.");
+      onBackToDecks && onBackToDecks();
+    } catch (err) {
+      console.error("Delete deck error:", err);
+      toast.error("Nem sikerült törölni a paklit", {
+        description: getApiErrorMessage(err),
+      });
+    }
+  };
+
   const handleAddCard = async () => {
     if (!newQuestion.trim() || !newAnswer.trim()) {
       toast.warning("Töltsd ki a kérdést és a választ is.");
@@ -93,10 +111,10 @@ export function FlashCardEdit({ deckId, onBackToStudy, onBackToDecks }) {
             </Button>
             <Button
               variant="outline"
-              onClick={onBackToDecks}
-              className="rounded-lg"
+              onClick={handleDeleteDeck}
+              className="rounded-lg border-red-500 text-red-500 hover:bg-red-50"
             >
-              Paklikhoz
+              Pakli törlése
             </Button>
           </div>
           <span className="text-sm text-muted-foreground">

@@ -87,7 +87,6 @@ export function FlashCardBoard({ onOpenDeck }) {
     "#fcf403", // sárga
     "#8b5cf6", // lila
     "#ec4899", // pink
-    "#663C1F", // barna
     "#898989", // szürke
   ];
 
@@ -232,7 +231,7 @@ export function FlashCardBoard({ onOpenDeck }) {
             cardCount={deck.cardCount}
             onClick={() => {
                 if (onOpenDeck) {
-                onOpenDeck(deck.id);
+                onOpenDeck(deck);
                 }
             }}
             />

@@ -31,7 +31,7 @@ export function Layout() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pomodoroInvite, setPomodoroInvite] = useState(null);
-  const [selectedDeckId, setSelectedDeckId] = useState(null);
+  const [selectedDeck, setSelectedDeck] = useState(null);
 
   const closePomodoroInvite = useCallback(() => setPomodoroInvite(null), []);
 
@@ -207,8 +207,8 @@ export function Layout() {
       case "flashcards":
         return (
           <FlashCardBoard
-            onOpenDeck={(deckId) => {
-              setSelectedDeckId(deckId);
+            onOpenDeck={(deck) => {
+              setSelectedDeck(deck);
               setCurrentPage("flashcards-study");
             }}
           />
@@ -216,10 +216,10 @@ export function Layout() {
       case "flashcards-study":
         return (
           <FlashCardStudy
-            deckId={selectedDeckId}
+            deckId={selectedDeck?.id}
+            deckColor={selectedDeck?.color}
             onBackToDecks={() => setCurrentPage("flashcards")}
-            onEditDeck={(deckId) => {
-              setSelectedDeckId(deckId);
+            onEditDeck={() => {
               setCurrentPage("flashcards-edit");
             }}
           />
@@ -227,7 +227,7 @@ export function Layout() {
       case "flashcards-edit":
         return (
           <FlashCardEdit
-            deckId={selectedDeckId}
+            deckId={selectedDeck?.id}
             onBackToStudy={() => setCurrentPage("flashcards-study")}
             onBackToDecks={() => setCurrentPage("flashcards")}
           />

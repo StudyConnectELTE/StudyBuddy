@@ -208,3 +208,24 @@ def delete_card(card_id):
     db.session.delete(card)
     db.session.commit()
     return jsonify({"success": True}), 200
+
+@flashcards_bp.route("/decks/<int:deck_id>", methods=["DELETE"])
+def delete_deck(deck_id):
+    """
+    Egy teljes pakli törlése az aktuális usernél az összes kártyájával együtt.
+    """
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    pack = CardPack.query.filter_by(id=deck_id, user_id=user_id).first()
+    if not pack:
+        return jsonify({"error": "Pakli nem található"}), 404
+
+    # Kapcsolt kártyák törlése (ha nincs cascade)
+    FlashCard.query.filter_by(pack_id=deck_id).delete()
+
+    db.session.delete(pack)
+    db.session.commit()
+
+    return jsonify({"success": True}), 200

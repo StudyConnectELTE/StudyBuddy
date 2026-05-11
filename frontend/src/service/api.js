@@ -732,7 +732,7 @@ const flashcardService = {
     return response.data; // { id, question, answer }
   },
 
-  // Kártya törlése (ha kell)
+  // Kártya törlése
   deleteCard: async (cardId) => {
     const token = getAuthToken();
     const response = await api.delete(`/flashcards/cards/${cardId}`, {
@@ -742,7 +742,17 @@ const flashcardService = {
     });
     return response.data;
   },
-  
+
+  deleteDeck: async (deckId) => {
+    const token = getAuthToken();
+    const response = await api.delete(`/flashcards/decks/${deckId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
 };
 
 export {
