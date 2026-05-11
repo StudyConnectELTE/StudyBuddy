@@ -705,6 +705,44 @@ const flashcardService = {
     );
     return response.data; // { id, name, subject, description, color, cardCount, ... }
   },
+
+  // Egy pakli kártyáinak lekérése
+  getCards: async (deckId) => {
+    const token = getAuthToken();
+    const response = await api.get(`/flashcards/decks/${deckId}/cards`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data; // [{ id, question, answer }, ...]
+  },
+
+  // Új kártya létrehozása pakliban
+  createCard: async (deckId, { question, answer }) => {
+    const token = getAuthToken();
+    const response = await api.post(
+      `/flashcards/decks/${deckId}/cards`,
+      { question, answer },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data; // { id, question, answer }
+  },
+
+  // Kártya törlése (ha kell)
+  deleteCard: async (cardId) => {
+    const token = getAuthToken();
+    const response = await api.delete(`/flashcards/cards/${cardId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+  
 };
 
 export {

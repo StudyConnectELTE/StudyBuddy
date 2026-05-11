@@ -116,3 +116,95 @@ def list_decks():
         )
 
     return jsonify(decks), 200
+
+@flashcards_bp.route("/decks/<int:deck_id>/cards", methods=["GET"])
+def list_cards(deck_id):
+    """
+    Egy adott pakli összes kártyája az aktuális usernek.
+    """
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    pack = CardPack.query.filter_by(id=deck_id, user_id=user_id).first()
+    if not pack:
+        return jsonify({"error": "Pakli nem található"}), 404
+
+    cards = (
+        FlashCard.query
+        .filter_by(pack_id=deck_id)
+        .order_by(FlashCard.id.asc())
+        .all()
+    )
+
+    return jsonify([
+        {
+            "id": c.id,
+            "question": c.question,
+            "answer": c.answer,
+        }
+        for c in cards
+    ]), 200
+
+
+@flashcards_bp.route("/decks/<int:deck_id>/cards", methods=["POST"])
+def create_card(deck_id):
+    """
+    Új kártya létrehozása egy pakliban.
+    Body:
+      - question: str
+      - answer: str
+    """
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    pack = CardPack.query.filter_by(id=deck_id, user_id=user_id).first()
+    if not pack:
+        return jsonify({"error": "Pakli nem található"}), 404
+
+    data = request.get_json() or {}
+    question = (data.get("question") or "").strip()
+    answer = (data.get("answer") or "").strip()
+
+    if not question:
+        return jsonify({"error": "A kérdés kötelező."}), 400
+    if not answer:
+        return jsonify({"error": "A válasz kötelező."}), 400
+
+    card = FlashCard(
+        pack_id=deck_id,
+        question=question,
+        answer=answer,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.session.add(card)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "id": card.id,
+            "question": card.question,
+            "answer": card.answer,
+        }
+    ), 201
+
+@flashcards_bp.route("/cards/<int:card_id>", methods=["DELETE"])
+def delete_card(card_id):
+    user_id, err, code = get_user_id()
+    if err:
+        return err, code
+
+    card = (
+        FlashCard.query
+        .join(CardPack, CardPack.id == FlashCard.pack_id)
+        .filter(FlashCard.id == card_id, CardPack.user_id == user_id)
+        .first()
+    )
+    if not card:
+        return jsonify({"error": "Kártya nem található"}), 404
+
+    db.session.delete(card)
+    db.session.commit()
+    return jsonify({"success": True}), 200

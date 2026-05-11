@@ -21,6 +21,7 @@ import PomodoroStatsPage from "./PomodoroStatsPage";
 import { FloatingPomodoroWidget } from "./FloatingPomodoroWidget";
 import { FlashCardBoard } from "./FlashCardBoard";
 import { FlashCardStudy } from "./FlashCardStudy";
+import { FlashCardEdit } from "./FlashCardEdit";
 
 export function Layout() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -218,10 +219,17 @@ export function Layout() {
             deckId={selectedDeckId}
             onBackToDecks={() => setCurrentPage("flashcards")}
             onEditDeck={(deckId) => {
-              console.log("Edit deck", deckId);
-              // ide jön majd a szerkesztő oldalra váltás, pl:
-              // setCurrentPage("flashcards-edit");
+              setSelectedDeckId(deckId);
+              setCurrentPage("flashcards-edit");
             }}
+          />
+        );
+      case "flashcards-edit":
+        return (
+          <FlashCardEdit
+            deckId={selectedDeckId}
+            onBackToStudy={() => setCurrentPage("flashcards-study")}
+            onBackToDecks={() => setCurrentPage("flashcards")}
           />
         );
       default:
