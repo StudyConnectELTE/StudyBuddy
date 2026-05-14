@@ -348,4 +348,38 @@ class FlashcardReview(db.Model):
 
     def __repr__(self):
         return f"<FlashcardReview user={self.user_id} card={self.flashcard_id}>"
+
+
+class Badge(db.Model):
+    __tablename__ = 'badges'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text, nullable=False)
+    icon_url = db.Column(db.String(255), nullable=True)
+    required_level = db.Column(db.Integer, nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to UserBadge
+    awarded_users = relationship('UserBadge', backref='badge', lazy=True, cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<Badge {self.name}>"
+
+
+class UserBadge(db.Model):
+    __tablename__ = 'user_badges'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    badge_id = db.Column(db.Integer, db.ForeignKey('badges.id'), nullable=False, index=True)
+    
+    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Unique constraint to prevent duplicate badges per user
+    __table_args__ = (db.UniqueConstraint('user_id', 'badge_id', name='unique_user_badge'),)
+    
+    def __repr__(self):
+        return f"<UserBadge User:{self.user_id} Badge:{self.badge_id}>"
     
